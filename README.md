@@ -49,3 +49,7 @@ Indexer tests exercise exact amounts, confirmations, duplicate events, restart, 
 - **Name limits:** on Vercel, X-Forwarded-For is trusted automatically for the 10 writes/minute limit; set `TRUST_PROXY=false` to share one limit.
 
 The UI shows up to 100 latest GE6 transactions and 100 latest historical transactions separately. Counts and totals include all matching rows. Databases, local reference source and credentials are ignored by git.
+
+## Admin search history
+
+`/admin` lists which addresses people searched (with the community name, count, first and last time). Searchers' IPs are not stored, and the admin's own searches are not counted. Set `ADMIN_PASSWORD` (12+ characters) in the environment to enable it; changing it signs out existing sessions.

@@ -29,3 +29,17 @@ export async function wallet(address: string) {
   const named = name.rows[0];
   return { address, name: named ? { name: String(named.name), version: Number(named.version), updated_at: String(named.updated_at) } : null, events, ge6: { amount: sum(ge6.map(r => r.amount)), transactions: ge6.length, items: ge6.slice(0, 100) }, transactions: historical.slice(0, 100), transactionCount: historical.length, importedAt: metadata.importedAt, ge6Status: JSON.parse(metadata.ge6Status || 'null') };
 }
+export async function logSearch(address: string) {
+  const now = new Date().toISOString();
+  await (await database()).execute({ sql: 'INSERT INTO search_log VALUES(?,1,?,?) ON CONFLICT(address) DO UPDATE SET count=count+1,last_at=excluded.last_at', args: [address, now, now] });
+}
+export type SearchEntry = { address: string; name: string | null; count: number; first_at: string; last_at: string };
+export async function searchLog(limit = 500) {
+  const db = await database();
+  const [list, totals] = await db.batch([
+    { sql: 'SELECT s.address,n.name,s.count,s.first_at,s.last_at FROM search_log s LEFT JOIN names n ON n.address=s.address ORDER BY s.last_at DESC LIMIT ?', args: [limit] },
+    'SELECT count(*) addresses,coalesce(sum(count),0) searches FROM search_log',
+  ], 'read');
+  const entries = list.rows.map(r => ({ address: String(r.address), name: r.name == null ? null : String(r.name), count: Number(r.count), first_at: String(r.first_at), last_at: String(r.last_at) })) as SearchEntry[];
+  return { entries, addresses: Number(totals.rows[0].addresses), searches: Number(totals.rows[0].searches) };
+}
