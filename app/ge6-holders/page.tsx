@@ -20,7 +20,7 @@ export default async function Holders(){
           <td className="num"><a href={href}><strong>{display(h.amount)}</strong></a></td>
         </tr>;})}</tbody>
       </table></div>
-      <p className="muted small">อัปเดตเมื่อ {date(data.fetchedAt)} · ข้อมูลเก็บไว้ไม่เกิน 5 นาที</p>
+      <p className="muted small">อัปเดตเมื่อ {date(data.fetchedAt)}</p>
     </>}
   </main></div>;
 }
