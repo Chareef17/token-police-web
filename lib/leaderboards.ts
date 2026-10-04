@@ -2,6 +2,17 @@ import { database } from './db';
 import { amount, sum, units } from './amount.mjs';
 import { tokenxGet } from './tokenx-transport.mjs';
 const GE6_TOKEN='0x2f5c60bde7a5ebd2b116bb03cb5232fa1ea55f1c';
+// Not fans: the GE6 voting contract, the treasury that received the whole mint, and every wallet the
+// treasury sent GE6 to directly (official distribution wallets), as traced on TokenX Scan in Oct 2026.
+export const officialWallets=new Set([
+  '0x86a1f49e1b1cbd69971e99b66123264c75ac2c8f', // GE6 voting contract
+  '0x88de4a0c186efe75fd359f4ebf36e5c4144e1255', // treasury (received the 5,000,027 GE6 mint)
+  '0x4bfe835bfc51e3b0ffddc89951d0eab7ff175f0f','0x7a6446b20dcae3aed0e6a1d21ba5d6787a341148',
+  '0x563a62883fd50d8463c1621528fca9d54ca7f8c9','0xf1c567e495ad13d48eb684a7bfbe33e3ae566abb',
+  '0x90a1e95d305df30b0e00f63cc3b9ff9bfefa9109','0xa66e830bc83c98a78ac20d1b705e8abe1c768195',
+  '0x8e6d24b7de8f178027e16d9c8f1c8d73edd2e5a4','0x59ca9c4d13d65c03bc3bdb227d3e745ccccc50cc',
+  '0xd754a0bff84998306f306da12a3eeedbdd8abf41','0x4924829cbbfb3b7de7469098a7867d43a5cd248a',
+]);
 export const fanEvents=['GE5','Thai-Japan 2026'] as const;
 type FanEvent=typeof fanEvents[number];
 export type Fan={address:string;name:string|null;events:Partial<Record<FanEvent,{nammonn:string;top:boolean}>>;total:string};
@@ -50,11 +61,11 @@ export async function nammonnFans(){
 const holderList=(limit:number)=>cached('holders:'+limit,300000,async()=>{
   const page=await tokenxGet(`/tokens/${GE6_TOKEN}/holders`) as {items?:{address?:{hash?:string;is_contract?:boolean};value?:string}[]};
   if(!Array.isArray(page.items))throw new Error('Invalid holders response');
-  const holders=page.items.slice(0,limit).map((item,i)=>{
+  const holders=page.items.map(item=>{
     const address=String(item.address?.hash).toLowerCase();
     if(!/^0x[0-9a-f]{40}$/.test(address)||!/^\d+$/.test(item.value||''))throw new Error('Invalid holder');
-    return {rank:i+1,address,name:null as string|null,amount:amount(BigInt(item.value!)),contract:!!item.address?.is_contract};
-  });
+    return {rank:0,address,name:null as string|null,amount:amount(BigInt(item.value!)),contract:!!item.address?.is_contract};
+  }).filter(h=>!officialWallets.has(h.address)).slice(0,limit).map((h,i)=>({...h,rank:i+1}));
   return {holders,fetchedAt:new Date().toISOString()};
 });
 export async function ge6Holders(limit=20){
