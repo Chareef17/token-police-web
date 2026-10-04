@@ -1,0 +1,9 @@
+node_modules/
+.next/
+.reference/
+data/
+.env*
+!.env.example
+outputs/
+*.tsbuildinfo
+.claude/
