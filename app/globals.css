@@ -33,11 +33,6 @@ body{position:relative}
 body::before{content:'';position:absolute;z-index:-1;top:0;left:0;right:0;height:min(620px,92vh);pointer-events:none;
   background:
     radial-gradient(circle at 60% 0%,#fffbe6 0,#fff6c8a6 6%,#ffffff00 22%),
-    radial-gradient(ellipse 20% 7% at 30% 6%,#ffffffb3 0,#ffffff00 100%),
-    radial-gradient(ellipse 12% 5% at 92% 22%,#ffffffbf 0,#ffffff00 100%),
-    radial-gradient(ellipse 26% 8% at 66% 46%,#ffffffcc 0,#ffffff00 100%),
-    radial-gradient(ellipse 12% 5% at 78% 42%,#ffffffd9 0,#ffffff00 100%),
-    radial-gradient(ellipse 30% 10% at 40% 70%,#ffffff99 0,#ffffff00 100%),
     linear-gradient(180deg,#38a8f5 0%,#5cbaf8 22%,#93d2fb 48%,#cdeafd 72%,#eaf6fe00 100%)}
 header{border-bottom-color:#ffffff80}
 .brand-name{color:#fff;text-shadow:0 2px 10px #0b5f9a59}
@@ -59,8 +54,6 @@ header{border-bottom-color:#ffffff80}
   radial-gradient(1px 1px at 120px 90px,#ffffffb3,#0000) 0 0/220px 170px,
   radial-gradient(1.5px 1.5px at 70px 150px,#fff,#0000) 0 0/310px 230px,
   radial-gradient(1px 1px at 200px 20px,#cfe3ffcc,#0000) 0 0/260px 120px,
-  radial-gradient(ellipse 26% 8% at 66% 46%,#5d86b51f 0,#0000 100%),
-  radial-gradient(ellipse 30% 10% at 40% 70%,#5d86b514 0,#0000 100%),
   linear-gradient(180deg,#0b2546 0%,#103462 26%,#0f2a4c 55%,#0c1d34 78%,#0a142400 100%)}
 [data-theme=dark] header{border-bottom-color:#ffffff26}
 [data-theme=dark] .brand-name{text-shadow:0 2px 12px #00000080}
@@ -108,3 +101,28 @@ header{border-bottom-color:#ffffff80}
 [data-theme=dark] .suggestions li.active,[data-theme=dark] .site-menu a:hover,[data-theme=dark] .site-menu a:focus-visible{background:#1c3555}
 [data-theme=dark] .board .tag{background:#173a5c;color:#8fd0ff}
 [data-theme=dark] .board .tag.off{background:#1b2a3c;color:var(--muted)}
+/* Drifting clouds: a two-screen-wide strip slides left to right and loops seamlessly. */
+html,body{overflow-x:clip}
+body::after{content:'';position:absolute;z-index:-1;top:0;left:-100%;width:200%;height:min(620px,92vh);pointer-events:none;
+  background-size:50% 100%;background-repeat:repeat-x;
+  background-image:
+    radial-gradient(ellipse 20% 7% at 30% 6%,#ffffffb3 0,#ffffff00 100%),
+    radial-gradient(ellipse 12% 5% at 92% 22%,#ffffffbf 0,#ffffff00 100%),
+    radial-gradient(ellipse 26% 8% at 66% 46%,#ffffffcc 0,#ffffff00 100%),
+    radial-gradient(ellipse 12% 5% at 78% 42%,#ffffffd9 0,#ffffff00 100%),
+    radial-gradient(ellipse 30% 10% at 40% 70%,#ffffff99 0,#ffffff00 100%),
+    radial-gradient(ellipse 16% 5% at 10% 34%,#ffffffa6 0,#ffffff00 100%);
+  animation:cloud-drift 120s linear infinite;will-change:transform}
+[data-theme=dark] body::after{background-image:
+    radial-gradient(ellipse 20% 7% at 30% 6%,#5d86b51a 0,#0000 100%),
+    radial-gradient(ellipse 26% 8% at 66% 46%,#5d86b51f 0,#0000 100%),
+    radial-gradient(ellipse 30% 10% at 40% 70%,#5d86b514 0,#0000 100%),
+    radial-gradient(ellipse 16% 5% at 10% 34%,#5d86b517 0,#0000 100%)}
+@keyframes cloud-drift{from{transform:translateX(0)}to{transform:translateX(50%)}}
+@media (prefers-reduced-motion:reduce){body::after{animation:none}}
+/* Breathing room between notes and the tables or cards they describe. */
+.freshness{margin-top:10px}
+.table-caption{margin-top:10px}
+.section-title{margin-bottom:16px}
+.board p.small{margin:0 0 16px}
+.board .table-wrap+p.small,.admin .table-wrap+p.small{margin:14px 0 0}
