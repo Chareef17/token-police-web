@@ -28,3 +28,20 @@ footer{justify-content:center}.powered-by{justify-content:center}
 .brand{position:relative}.brand-copy{text-decoration:none;color:inherit}.logo-button{padding:0;cursor:pointer;background:none}.logo-button:focus-visible{outline:3px solid #7cc4f2;outline-offset:2px}.site-menu{position:absolute;top:calc(100% + 10px);left:0;z-index:30;width:min(340px,calc(100vw - 32px));display:flex;flex-direction:column;gap:4px;padding:8px;background:#fff;border:1px solid #b5d4e8;border-radius:16px;box-shadow:0 14px 36px #1d6fa52e;letter-spacing:0}.site-menu a{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:11px;text-decoration:none;color:var(--text)}.site-menu a:hover,.site-menu a:focus-visible{background:#e3f2fc;outline:none}.site-menu strong{font-size:16px;font-weight:600;color:var(--accent)}.site-menu span{font-size:12px;font-weight:400;color:var(--muted)}
 .board{padding:34px 0 60px}.board h1{font-size:clamp(24px,3vw,32px);margin:0 0 6px}.board-intro{margin:0 0 22px}.board tbody tr{cursor:pointer}.board tbody tr:hover{background:#eef7fd}.board a{color:inherit;text-decoration:none}.board .rank{color:var(--muted);width:36px}.board .who strong{display:block;font:500 15px var(--font-th),sans-serif}.board .who code{font:12px monospace;color:var(--muted)}.board .num{text-align:right;font-variant-numeric:tabular-nums}.board .tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:999px;background:#dff1fc;color:#0d6aa8;margin-left:6px}.board .tag.off{background:#f0f3f6;color:var(--muted)}
 .board tbody td{padding:0;height:1px;vertical-align:top}.board tbody td>a{display:block;box-sizing:border-box;height:100%;padding:17px 12px}
+/* Sky behind the header: bright blue fading into the page, with soft clouds and sunlight. */
+body{position:relative}
+body::before{content:'';position:absolute;z-index:-1;top:0;left:0;right:0;height:min(620px,92vh);pointer-events:none;
+  background:
+    radial-gradient(circle at 60% 0%,#fffbe6 0,#fff6c8a6 6%,#ffffff00 22%),
+    radial-gradient(ellipse 20% 7% at 30% 6%,#ffffffb3 0,#ffffff00 100%),
+    radial-gradient(ellipse 12% 5% at 92% 22%,#ffffffbf 0,#ffffff00 100%),
+    radial-gradient(ellipse 26% 8% at 66% 46%,#ffffffcc 0,#ffffff00 100%),
+    radial-gradient(ellipse 12% 5% at 78% 42%,#ffffffd9 0,#ffffff00 100%),
+    radial-gradient(ellipse 30% 10% at 40% 70%,#ffffff99 0,#ffffff00 100%),
+    linear-gradient(180deg,#38a8f5 0%,#5cbaf8 22%,#93d2fb 48%,#cdeafd 72%,#eaf6fe00 100%)}
+header{border-bottom-color:#ffffff80}
+.brand-name{color:#fff;text-shadow:0 2px 10px #0b5f9a59}
+.supporter-label{color:#ffffffe6;text-shadow:0 1px 6px #0b5f9a4d}
+.sleeping-logo{border-color:#ffffff;box-shadow:0 4px 16px #0b5f9a40}
+.support-banner{background:linear-gradient(115deg,#ffffffeb,#f2faffd9 60%,#e2f3ffcc);border-color:#ffffffcc;box-shadow:0 14px 40px #1f7fc22b}
+.board h1{color:#fff;text-shadow:0 1px 2px #0a4f8099,0 2px 12px #0b5f9a80}.board .board-intro{color:#fff;text-shadow:0 1px 2px #0a4f8099,0 1px 8px #0b5f9a80}
