@@ -9,12 +9,13 @@
     "start": "next start --hostname 127.0.0.1",
     "sync": "node --env-file-if-exists=.env.local scripts/index-ge6.mjs",
     "sync:watch": "node --env-file-if-exists=.env.local scripts/index-ge6.mjs --watch",
+    "upload-data": "node --env-file-if-exists=.env.local scripts/upload-data.mjs",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "ethers": "^6.17.0",
     "next": "^16.2.0",
-    "playwright-core": "^1.63.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

@@ -21,7 +21,7 @@ export default function Home(){
   }
   useEffect(()=>{const value=new URLSearchParams(window.location.search).get('address');if(value)void search(value);},[]);
   async function saveName(event:FormEvent){event.preventDefault();if(!data)return;const id=serial.current;setSaving(true);setNameError('');try{const r=await fetch('/api/names',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:data.address,name,version:data.name?.version||0})});const result=await r.json();if(!r.ok)throw new Error(result.error);if(serial.current===id){setData({...data,name:result});setEditing(false);setNotice('บันทึกชื่อแล้ว ทุกคนจะเห็นชื่อนี้');}}catch(e){if(serial.current===id)setNameError(e instanceof Error?e.message:'บันทึกไม่สำเร็จ');}finally{setSaving(false);}}
-  const stale=!!data && (data.ge6Status?.phase==='error'||!data.ge6Status?.lastSuccess||Date.now()-Date.parse(data.ge6Status.lastSuccess)>5*60000);
+  const stale=!!data && (data.ge6Status?.phase==='error'||!data.ge6Status?.lastSuccess||Date.now()-Date.parse(data.ge6Status.lastSuccess)>20*60000);
   return <div className="shell">
     <header><a className="brand" href="/"><span className="sleeping-logo"><img src="/tofer-logo.webp" alt="ตุ๊กตาสลอธห่มผ้าห่มสีฟ้า" width="889" height="890" /></span><span className="brand-copy"><span className="brand-name">คุณนักสืบโตเฟ่อ</span></span></a><span className="supporter-label">FAN SUPPORT PROJECT</span></header>
     <main>

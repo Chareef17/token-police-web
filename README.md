@@ -1,6 +1,6 @@
 # TokenPolice Web
 
-Next.js / TypeScript / Tailwind / SQLite wallet explorer. Requires Node.js 24.17+, pnpm and Chrome (or direct TokenX API access).
+Next.js / TypeScript / Tailwind / SQLite (libSQL) wallet explorer. Requires Node.js 24.17+ and pnpm. Without `TURSO_DATABASE_URL` it uses a local SQLite file in `data/`; with it, the hosted Turso database.
 
 ## Run locally
 
@@ -22,13 +22,14 @@ On Windows after `pnpm build`, `powershell -File scripts/Start-Web.ps1` runs the
 - A 300-block overlap catches delayed logs, and an hourly full reconciliation checks the entire receipt sequence. Transaction hash + log index prevents duplicates. A checkpoint hash change triggers a complete replay. Partial, stale, out-of-order, failed or incomplete responses do not replace the last good vote snapshot. A renewable SQLite lease prevents two web indexers writing concurrently.
 - All events and checkpoints are saved in the web's `data/votes.sqlite`. Vote totals use integer arithmetic with 18-decimal precision. GE6 has no verified recipient column in the UI.
 - Historical events are the one-time dataset already imported into the web database. They have no ongoing relationship with the bot. To move the app to another server, migrate its own database with SQLite's backup API.
-- Wallet balances already read TokenX Scan directly and use a one-minute cache. Browser transport defaults to Chrome; configure `TOKENX_BROWSER_CHANNEL` or `TOKENX_BROWSER_PATH`, or use `TOKENX_MODE=api` where direct API access works.
+- Wallet balances read TokenX Scan directly and use a one-minute cache. TokenX rejects requests without a browser User-Agent, so all TokenX calls send browser headers.
+- Each pass writes only rows that changed, keeping hosted-database writes small.
 
 The page reads the latest committed snapshot when searching or refreshing. It does not wait for a full blockchain scan on each click. The last successful sync time is shown; failed/stale updates are flagged. Keep the web indexer running for new transactions. Stopping the Discord bot has no effect on the web indexer.
 
 ## Names
 
-Discord names and settings are never read. Community labels live separately in `data/names.sqlite`, with revision history. Anyone can set or edit a label. Writes are validated, same-origin, rate-limited and protected against stale revisions. Names are community labels, not verified ownership.
+Discord names and settings are never read. Community labels live in the `names` table of the same database, with revision history. Anyone can set or edit a label. Writes are validated, same-origin, rate-limited and protected against stale revisions. Names are community labels, not verified ownership.
 
 ## Verification
 
@@ -41,10 +42,10 @@ node scripts/check-api.mjs
 
 Indexer tests exercise exact amounts, confirmations, duplicate events, restart, missing receipts, upstream failures, pagination and reorgs. API checks remove only their random synthetic wallet label.
 
-## Hosting
+## Hosting (Vercel)
 
-Use a Node server with persistent storage and run `pnpm sync:watch` as a separate supervised process. Do not use ephemeral/serverless SQLite storage. No access to the bot machine is needed. Preserve the web's `data` directory and back up SQLite using its backup API, including committed WAL state. Supply Chrome for the browser transport or select direct API mode if available.
-
-Terminate HTTPS at a reverse proxy, preserve the external Host header and proxy to localhost:3000. Only set `TRUST_PROXY=true` when the trusted proxy overwrites X-Forwarded-For; otherwise naming shares a limit of 10 writes/minute. Limit body size at the proxy. Production hosting is not yet configured.
+- **Database:** create a Turso database (Vercel → Storage → Turso), which sets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` on the project. To copy the local data in, put both values in `.env.local` and run `pnpm upload-data`.
+- **GE6 sync:** `.github/workflows/sync-ge6.yml` runs `pnpm sync` every 5 minutes on GitHub Actions (GitHub may delay scheduled runs). Add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` as repository secrets. It can also be started by hand from the Actions tab.
+- **Name limits:** on Vercel, X-Forwarded-For is trusted automatically for the 10 writes/minute limit; set `TRUST_PROXY=false` to share one limit.
 
 The UI shows up to 100 latest GE6 transactions and 100 latest historical transactions separately. Counts and totals include all matching rows. Databases, local reference source and credentials are ignored by git.
