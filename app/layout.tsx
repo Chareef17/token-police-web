@@ -4,4 +4,6 @@ import './globals.css';
 const kanit=Kanit({subsets:['thai','latin'],weight:['300','400','500','600','700','800'],variable:'--font-th',display:'swap'});
 const zenMaru=Zen_Maru_Gothic({weight:['500','700'],variable:'--font-jp',display:'swap',preload:false});
 export const metadata:Metadata={title:'TokenPolice — Wallet explorer',description:'ค้นหาประวัติโหวต BNK48 / CGM48 และยอดเหรียญในกระเป๋า',icons:{icon:'/icon.svg'}};
-export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="th" className={`${kanit.variable} ${zenMaru.variable}`}><body>{children}</body></html>;}
+// Applied before first paint: the saved choice, otherwise the device setting.
+const themeScript=`try{var t=localStorage.getItem('theme');}catch(e){}document.documentElement.dataset.theme=t==='dark'||t==='light'?t:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');`;
+export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="th" className={`${kanit.variable} ${zenMaru.variable}`} suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:themeScript}}/></head><body>{children}</body></html>;}
