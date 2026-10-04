@@ -3,11 +3,18 @@ import { useEffect, useState } from 'react';
 type Theme='light'|'dark';
 export default function ThemeToggle(){
   const [theme,setTheme]=useState<Theme|null>(null);
-  useEffect(()=>{setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');},[]);
+  useEffect(()=>{
+    setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
+    // Choices saved only in this browser before the cookie existed are moved to the cookie once.
+    let saved:string|null=null;try{saved=localStorage.getItem('theme');}catch{}
+    if((saved==='dark'||saved==='light')&&!/(^|;\s*)theme=/.test(document.cookie))save(saved);
+  },[]);
+  function save(value:Theme){void fetch('/api/theme',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({theme:value})}).catch(()=>{});}
   function toggle(){
     const next:Theme=theme==='dark'?'light':'dark';
     document.documentElement.dataset.theme=next;setTheme(next);
     try{localStorage.setItem('theme',next);}catch{}
+    save(next);
   }
   const dark=theme==='dark';
   return <button type="button" className="theme-toggle" onClick={toggle} aria-label={dark?'เปลี่ยนเป็นโหมดสว่าง':'เปลี่ยนเป็นโหมดมืด'} title={dark?'โหมดสว่าง':'โหมดมืด'}>
