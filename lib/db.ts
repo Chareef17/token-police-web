@@ -43,3 +43,11 @@ export async function searchLog(limit = 500) {
   const entries = list.rows.map(r => ({ address: String(r.address), name: r.name == null ? null : String(r.name), count: Number(r.count), first_at: String(r.first_at), last_at: String(r.last_at) })) as SearchEntry[];
   return { entries, addresses: Number(totals.rows[0].addresses), searches: Number(totals.rows[0].searches) };
 }
+export async function findNames(query: string, limit = 8) {
+  const q = query.normalize('NFC').trim().toLowerCase();
+  if (!q) return [];
+  const like = '%' + q.replace(/[!%_]/g, c => '!' + c) + '%';
+  // Exact matches first, then names starting with the text, then the rest.
+  const rows = (await (await database()).execute({ sql: "SELECT address,name FROM names WHERE lower(name) LIKE ? ESCAPE '!' ORDER BY lower(name)=? DESC,lower(name) LIKE ? ESCAPE '!' DESC,name LIMIT ?", args: [like, q, like.slice(1), limit] })).rows;
+  return rows.map(r => ({ address: String(r.address), name: String(r.name) }));
+}
