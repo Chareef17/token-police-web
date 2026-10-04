@@ -10,7 +10,7 @@ export default async function Holders(){
   let data;try{data=await ge6Holders(20);}catch(error){console.error(error);}
   return <div className="shell"><SiteHeader/><main className="board">
     <h1>ผู้ถือ GE6 สูงสุด 20 อันดับ</h1>
-    <p className="muted board-intro">ยอดเหรียญ GE6 ที่ยังอยู่ในกระเป๋าตอนนี้ จาก TokenX Scan · ไม่นับสัญญาโหวต GE6 และกระเป๋าทางการที่ใช้แจกเหรียญ · กดที่แถวเพื่อดูประวัติ</p>
+    <p className="muted board-intro">ยอดเหรียญ GE6 ที่ยังอยู่ในกระเป๋าตอนนี้ จาก TokenX Scan</p>
     {!data?<p className="error" role="alert">TokenX Scan ยังไม่ตอบกลับ ลองใหม่อีกครั้ง</p>:<>
       <div className="table-wrap"><table>
         <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">GE6 ที่ถืออยู่</th></tr></thead>
