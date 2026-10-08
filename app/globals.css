@@ -222,3 +222,15 @@ header{border-bottom-color:#ffffff80}
   .transaction-cards td.transaction-date,.admin-cards td.admin-card-name{grid-column:1/-1}
   .transaction-cards td[data-label],.admin-cards td[data-label]{grid-column:1/-1}
 }
+/* Mobile header: logo + name on the sky, menu bar on its own row below. */
+@media(max-width:760px){
+  .site-header{flex-wrap:wrap;min-height:0;padding:0;background:none;border-bottom:0}
+  .site-header .brand{display:flex;order:1;flex:1;min-width:0;padding:14px 16px 12px}
+  .site-header .brand-copy{display:flex}
+  .site-header .brand-name{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .site-header .sleeping-logo{width:44px;height:44px}
+  .site-header .header-right{order:2;margin-left:0;padding-right:16px}
+  .site-header .theme-toggle{width:36px;height:36px;color:#fff;border-color:#ffffff99;background:#ffffff33;box-shadow:0 4px 14px #0b5f9a33}
+  .header-nav{order:3;flex:0 0 100%;padding:8px 10px;background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  [data-theme=dark] .site-header .theme-toggle{background:#ffffff14;border-color:#ffffff40;color:#ffe9a8;box-shadow:0 4px 14px #00000059}
+}
