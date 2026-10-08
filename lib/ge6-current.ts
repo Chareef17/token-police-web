@@ -33,13 +33,17 @@ async function calculateRanking(mode:RankingMode='votes') {
   const historical = new Map<string,Map<string,bigint>>();
   const manual = new Map<string,string[]>();
   // Keep each query below SQLite's bind-variable limit and fetch only wallets that voted after the cutoff.
-  for (let start=0;start<addresses.length;start+=100) {
-    const slice=addresses.slice(start,start+100);
+  const chunks=[];
+  for (let start=0;start<addresses.length;start+=100) chunks.push(addresses.slice(start,start+100));
+  // Chunks are fetched in parallel; each is one read batch.
+  const chunkRows=await Promise.all(chunks.map(slice=>{
     const placeholders=slice.map(()=>'?').join(',');
-    const [voteRows,manualRows]=await db.batch([
+    return db.batch([
       {sql:`SELECT address,event,member,amount FROM votes WHERE event IN (?,?,?) AND address IN (${placeholders})`,args:[...events,...slice]},
       {sql:`SELECT address,rank1,rank2,rank3 FROM manual_predictions WHERE address IN (${placeholders})`,args:slice},
     ],'read');
+  }));
+  for (const [voteRows,manualRows] of chunkRows) {
     for (const row of voteRows.rows) {
       const address=String(row.address).toLowerCase();
       const member=ge6CandidateByName.get(String(row.member).trim().toLowerCase());

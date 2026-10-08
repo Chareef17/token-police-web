@@ -22,11 +22,14 @@ export function ge6HeldBalances(){
 
 // BNK balances for the given wallets.
 export async function bnkHeldBalances(addresses:string[]){
-  const db=await database();const balances=new Map<string,bigint>();
+  const balances=new Map<string,bigint>();
+  const statements=[];
   for(let start=0;start<addresses.length;start+=100){
     const slice=addresses.slice(start,start+100);
-    const rows=(await db.execute({sql:`SELECT address,value FROM token_holders WHERE token=? AND address IN (${slice.map(()=>'?').join(',')})`,args:[tokens.bnk,...slice]})).rows;
-    for(const row of rows)balances.set(String(row.address),BigInt(String(row.value)));
+    statements.push({sql:`SELECT address,value FROM token_holders WHERE token=? AND address IN (${slice.map(()=>'?').join(',')})`,args:[tokens.bnk,...slice]});
   }
+  // One round trip for every chunk instead of one per chunk.
+  if(statements.length)for(const result of await (await database()).batch(statements,'read'))
+    for(const row of result.rows)balances.set(String(row.address),BigInt(String(row.value)));
   return balances;
 }
