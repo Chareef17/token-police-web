@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import ThemeToggle from './theme-toggle';
-const links=[{href:'/nammonn',title:'สายเปย์น้ำมนต์',detail:'กระเป๋าที่โหวตน้ำมนต์มากที่สุดใน GE5 / Thai-Japan'},{href:'/ge6-holders',title:'ผู้ถือ GE6 สูงสุด',detail:'20 อันดับกระเป๋าที่ถือเหรียญ GE6 มากที่สุด'}];
+const links=[{href:'/ge6-voters',title:'อันดับผู้โหวต GE6',detail:'ยอดโหวตสะสม ยอดเหรียญ และ BNK เคลื่อนไหวล่าสุด'},{href:'/nammonn',title:'สายเปย์น้ำมนต์',detail:'กระเป๋าที่โหวตน้ำมนต์มากที่สุดใน GE5 / Thai-Japan'},{href:'/ge6-holders',title:'ผู้ถือ GE6 สูงสุด',detail:'20 อันดับกระเป๋าที่ถือเหรียญ GE6 มากที่สุด'}];
 export default function SiteHeader(){
   const [open,setOpen]=useState(false);const box=useRef<HTMLDivElement>(null);
   useEffect(()=>{

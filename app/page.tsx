@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { display } from '@/lib/amount.mjs';
 import SiteHeader from './site-header';
+import Ge6VotersTable from './ge6-voters-table';
 type Transaction={id:string;event:string;member:string;amount:string;tx_hash:string|null;voted_at:string|null};
 type Wallet={address:string;name:{name:string;version:number}|null;events:{event:string;total:string;members:{member:string;amount:string;transactions:number}[]}[];ge6:{amount:string;transactions:number;items:Transaction[]};transactions:{id:string;event:string;member:string;amount:string;tx_hash:string|null;voted_at:string|null}[];transactionCount:number;importedAt:string;ge6Status:{lastSuccess?:string;confirmedBlock?:number;phase?:string}|null};
 type Suggestion={address:string;name:string};
@@ -79,7 +80,7 @@ export default function Home(){
         </section>
         <section className="records"><h2 className="section-title">ประวัติการโหวตงานเก่า</h2><div className="tabs" role="tablist" aria-label="ข้อมูลโหวต"><button id="history-tab" role="tab" aria-selected={tab==='history'} aria-controls="records-panel" onClick={()=>setTab('history')}>ประวัติแต่ละงาน <span>{data.events.length}</span></button><button id="transactions-tab" role="tab" aria-selected={tab==='transactions'} aria-controls="records-panel" onClick={()=>setTab('transactions')}>รายการโหวต <span>{data.transactionCount.toLocaleString()}</span></button></div>
         <div id="records-panel" role="tabpanel" aria-labelledby={tab==='history'?'history-tab':'transactions-tab'}>{tab==='history'?<>{data.events.length===0?<div className="empty-records">ไม่พบประวัติโหวตงานก่อน ๆ ของ address นี้ในฐานข้อมูล</div>:data.events.map((event,i)=><article className="event" key={event.event}><div className="event-heading"><span className="event-number">{String(i+1).padStart(2,'0')}</span><div><h3>{event.event}</h3><p>{event.members.length} เมมเบอร์ / รายการที่ได้รับโหวต</p></div><div className="event-total"><strong>{display(event.total)}</strong><span>tokens รวม</span></div></div><div className="member-list">{event.members.map(m=><div className="member" key={m.member}><div className="member-avatar">{m.member.slice(0,1)}</div><span className="member-name">{m.member}</span><span className="tx-count">{m.transactions.toLocaleString()} รายการ</span><strong>{display(m.amount)} <small>tokens</small></strong></div>)}</div></article>)}</>:<><TransactionTable rows={data.transactions} /><p className="muted small table-caption">แสดง {data.transactions.length.toLocaleString()} รายการล่าสุด จากทั้งหมด {data.transactionCount.toLocaleString()} รายการ</p></>}</div></section>
-      </>:<section className="welcome"><div className="welcome-mark"><Icon kind="wallet"/></div><h2>มาช่วยคุณนักสืบโตเฟ่อหาเหรียญ</h2><p>ดูว่าเคยโหวตให้ใครในงานก่อน ๆ<br/>ใช้ GE6 ไปเท่าไหร่ และเหลือเหรียญอีกเท่าไหร่</p><div className="welcome-labels"><span>ประวัติโหวต</span><span>ยอดคงเหลือ</span></div></section>}
+      </>:<Ge6VotersTable/>}
     </main><footer><div className="powered-by"><span>Powered by</span><img src="/powered-by.png" alt="โลโก้ผู้สนับสนุน" width="112" height="112" /></div></footer>
   </div>;
 }
