@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import SiteHeader from '../site-header';
+import RankingPanel from './ranking-panel';
 import { ge6CurrentRanking } from '@/lib/ge6-current';
 import { displayShort } from '@/lib/amount.mjs';
 
@@ -16,10 +16,7 @@ export default async function Page({searchParams}:{searchParams:Promise<{include
   try {data=await ge6CurrentRanking(includeHoldings);} catch(error) {console.error(error);}
   return <div className="shell"><SiteHeader/><main className="board current-board">
     <h1>ประมาณอันดับ GE6 ปัจจุบัน</h1>
-    <div className="current-view-toggle" role="group" aria-label="วิธีคำนวณอันดับ">
-      <Link href="/ge6-current" prefetch={false} className={!includeHoldings?'active':''} aria-current={!includeHoldings?'page':undefined}>โหวตแล้ว</Link>
-      <Link href="/ge6-current?includeHoldings=1" prefetch={false} className={includeHoldings?'active':''} aria-current={includeHoldings?'page':undefined}>รวม GE6 ในกระเป๋า</Link>
-    </div>
+    <RankingPanel includeHoldings={includeHoldings}>
     {!data?<p className="error" role="alert">ยังโหลดอันดับไม่ได้ กรุณาลองใหม่อีกครั้ง</p>:<>
       <div className="current-summary">
         <span>โหวตหลังผลด่วน <strong>{data.postVoteCount.toLocaleString('th-TH')}</strong> รายการ</span>
@@ -44,5 +41,6 @@ export default async function Page({searchParams}:{searchParams:Promise<{include
       {includeHoldings&&<p className="muted small">ยอดในวงเล็บคือ GE6 ที่ยังอยู่ในกระเป๋าผู้ถือ ณ เวลาที่โหลดข้อมูล กระจายตามรายชื่อที่คาดว่าจะโหวตด้วยสัดส่วนเดิม จึงเป็นเพียงสมมติฐานว่าเหรียญเหล่านั้นจะถูกนำไปโหวต</p>}
       <p className="muted small">ข้อมูลโหวตล่าสุด {data.lastVoteAt?date(data.lastVoteAt):'ยังไม่มีหลังผลด่วน'} · โหลดข้อมูลเมื่อ {date(data.fetchedAt)}</p>
     </>}
+    </RankingPanel>
   </main></div>;
 }
