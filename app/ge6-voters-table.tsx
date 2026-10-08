@@ -25,13 +25,13 @@ export default function Ge6VotersTable(){
     <p className="muted board-intro">ยอดโหวตสะสม เรียงจากมากไปน้อย</p>
     {loading?<div className="loading-panel" role="status"><span className="spinner"/> กำลังโหลดอันดับ…</div>:error?<p className="error" role="alert">{error} <button className="text-button" onClick={()=>setRetry(r=>r+1)}>ลองใหม่</button></p>:data&&<>
       <div className="table-wrap" tabIndex={0} aria-label="ตารางอันดับผู้โหวต GE6"><table>
-        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">BNK ถืออยู่</th><th className="num">GE6 โหวตแล้ว</th><th className="num">GE6 ถืออยู่</th><th>BNK เคลื่อนไหวล่าสุด</th></tr></thead>
+        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">GE6 โหวตแล้ว</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th>BNK เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.rows.map(row=>{const href='/?address='+row.address;return <tr key={row.address}>
           <td className="rank"><a href={href}>{row.rank}</a></td>
           <td className="who"><a href={href}>{row.name&&<strong>{row.name}</strong>}<code>{short(row.address)}</code></a></td>
-          <td className="num"><a href={href}>{row.bnk===null?'—':displayShort(row.bnk)}</a></td>
           <td className="num"><a href={href}><strong>{displayShort(row.voted)}</strong></a></td>
           <td className="num"><a href={href}>{row.ge6===null?'—':displayShort(row.ge6)}</a></td>
+          <td className="num"><a href={href}>{row.bnk===null?'—':displayShort(row.bnk)}</a></td>
           <td><a href={href}>{date(row.bnkMovedAt)}</a></td>
         </tr>;})}</tbody>
       </table></div>
