@@ -1,7 +1,7 @@
 import { database } from './db';
 import { units, amount } from './amount.mjs';
 import { ge6CandidateByName, ge6CandidateNames } from './ge6-candidates';
-import { makeRanking, splitVote } from './ge6-current-model.mjs';
+import { makeRanking, snapshotTotal, splitVote } from './ge6-current-model.mjs';
 import { ge6HeldBalances, bnkHeldBalances } from './ge6-held-balances';
 
 // 'votes': votes cast since the preliminary result; 'ge6': plus GE6 still held by those wallets;
@@ -110,9 +110,14 @@ async function calculateRanking(mode:RankingMode='votes') {
   const votedByName=new Map(votedRows.map((row:{name:string;amount:string})=>[row.name,row.amount]));
   const rows=makeRanking([...ge6CandidateNames],preliminary.results as [string,string][],combined)
     .map((row:{name:string;amount:string})=>({...row,votedAmount:votedByName.get(row.name)!,todayAmount:amount(todayAdditions.get(row.name)??0n),heldAmount:amount(heldAdditions.get(row.name)??0n),bnkAmount:amount(bnkAdditions.get(row.name)??0n)}));
+  const publishedTotal=(preliminary.results as [string,string][]).reduce((total,[,score])=>total+units(score),0n);
+  const trackedTotal=publishedTotal+allocated;
+  const untrackedTotal=(snapshotTotal-publishedTotal)+unassigned;
+  const votedTotal=snapshotTotal+allocated+unassigned;
+  if(trackedTotal+untrackedTotal!==votedTotal)throw new Error('GE6 vote totals do not reconcile');
   return {rows,mode,includeHoldings,contributions,additions,heldAdditions,
     cutoff:preliminary.cutoff,lastVoteAt,postVoteCount:votes.length,walletCount:wallets.size,manualWallets,
-    allocated:amount(allocated),unassigned:amount(unassigned),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),fetchedAt:new Date().toISOString()};
+    allocated:amount(allocated),unassigned:amount(unassigned),votedTotal:amount(votedTotal),trackedTotal:amount(trackedTotal),untrackedTotal:amount(untrackedTotal),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),fetchedAt:new Date().toISOString()};
 }
 
 export async function ge6CurrentRanking(mode:RankingMode='votes'){
