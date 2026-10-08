@@ -115,3 +115,4 @@ header{border-bottom-color:#ffffff80}
 .board p.small{margin:0 0 16px}
 .board .table-wrap+p.small,.admin .table-wrap+p.small{margin:14px 0 0}
 .voters-board h2{font-size:clamp(24px,3vw,32px);margin:0 0 6px}.voters-pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:13px}.voters-pagination>div{display:flex;gap:8px}.voters-board .table-wrap{border:1px solid var(--line);border-radius:14px}.voters-board td{white-space:nowrap}.voters-board th{white-space:nowrap}@media(max-width:600px){.voters-pagination{align-items:flex-start;flex-direction:column}}
+.voters-board th.last-activity{padding-left:32px}.voters-board td.last-activity>a{padding-left:32px}

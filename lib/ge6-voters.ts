@@ -3,7 +3,6 @@ import { amount, units } from './amount.mjs';
 import { balances } from './balances';
 import { tokenxGet } from './tokenx-transport.mjs';
 
-const BNK='0xa992ad80fa6136702382123ae717890bc587491d';
 const PAGE_SIZE=20;
 type Ranked={address:string;voted:string;rank:number};
 type Activity={date:string|null};
@@ -28,12 +27,12 @@ async function ranking(){
   return value;
 }
 
-async function latestBnk(address:string):Promise<Activity>{
+async function latestTransaction(address:string):Promise<Activity>{
   const hit=activityCache.get(address);if(hit&&hit.until>Date.now())return hit.value;
   const value=(async()=>{
-    const response=await tokenxGet(`/addresses/${address}/token-transfers?type=ERC-20&token=${BNK}`) as {items?:{timestamp?:string;token?:{address?:string}}[]};
-    if(!Array.isArray(response.items))throw new Error('Invalid token transfers response');
-    const first=response.items.find(item=>item.token?.address?.toLowerCase()===BNK);
+    const response=await tokenxGet(`/addresses/${address}/transactions?filter=from`) as {items?:{timestamp?:string;from?:{hash?:string}}[]};
+    if(!Array.isArray(response.items))throw new Error('Invalid transactions response');
+    const first=response.items.find(item=>item.from?.hash?.toLowerCase()===address);
     return {date:first?.timestamp??null};
   })();
   activityCache.set(address,{until:Date.now()+300000,value});
@@ -52,7 +51,7 @@ export async function ge6Voters(page=1){
     for(const row of result.rows)names.set(String(row.address).toLowerCase(),String(row.name));
   }
   const result=Array<{
-    rank:number;address:string;name:string|null;voted:string;bnk:string|null;ge6:string|null;bnkMovedAt:string|null;
+    rank:number;address:string;name:string|null;voted:string;bnk:string|null;ge6:string|null;lastTxAt:string|null;
   }>(slice.length);
   // Limit upstream requests while allowing the page to load promptly.
   let cursor=0;
@@ -60,11 +59,11 @@ export async function ge6Voters(page=1){
     while(cursor<slice.length){
       const index=cursor++;
       const row=slice[index];
-      const [balance,activity]=await Promise.allSettled([balances(row.address),latestBnk(row.address)]);
+      const [balance,activity]=await Promise.allSettled([balances(row.address),latestTransaction(row.address)]);
       result[index]={...row,name:names.get(row.address)??null,
         bnk:balance.status==='fulfilled'?balance.value.balances.find(b=>b.symbol==='BNK')?.amount??null:null,
         ge6:balance.status==='fulfilled'?balance.value.balances.find(b=>b.symbol==='GE6')?.amount??null:null,
-        bnkMovedAt:activity.status==='fulfilled'?activity.value.date:null};
+        lastTxAt:activity.status==='fulfilled'?activity.value.date:null};
     }
   }));
   return {rows:result,page:current,pages,total:ranked.length,fetchedAt:new Date().toISOString()};
