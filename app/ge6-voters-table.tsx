@@ -25,14 +25,14 @@ export default function Ge6VotersTable(){
     <p className="muted board-intro">ยอดโหวตสะสม เรียงจากมากไปน้อย</p>
     {loading?<div className="loading-panel" role="status"><span className="spinner"/> กำลังโหลดอันดับ…</div>:error?<p className="error" role="alert">{error} <button className="text-button" onClick={()=>setRetry(r=>r+1)}>ลองใหม่</button></p>:data&&<>
       <div className="table-wrap" tabIndex={0} aria-label="ตารางอันดับผู้โหวต GE6"><table>
-        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">GE6 โหวตแล้ว</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
+        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">GE6 โหวตแล้ว</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.rows.map(row=>{const href='/?address='+row.address;return <tr key={row.address}>
           <td className="rank"><a href={href}>{row.rank}</a></td>
           <td className="who"><a href={href}>{row.name&&<strong>{row.name}</strong>}<code>{short(row.address)}</code></a></td>
           <td className="num"><a href={href}><strong>{displayShort(row.voted)}</strong></a></td>
           <td className="num"><a href={href}>{row.ge6===null?'—':displayShort(row.ge6)}</a></td>
           <td className="num"><a href={href}>{row.bnk===null?'—':displayShort(row.bnk)}</a></td>
-          <td className="vote-hint"><a href={href}>{row.likely.length?row.likely.map(candidate=><span className="candidate" key={candidate}>{candidate}</span>):'—'}</a></td>
+          <td className="vote-hint vote-hint-first"><a href={href}>{row.likely.length?row.likely.map((candidate,index)=><span className="candidate" key={candidate}>{index+1}. {candidate}</span>):'—'}</a></td>
           <td className="vote-hint"><a href={href}>{row.topVote??'—'}</a></td>
           <td className="last-activity"><a href={href}>{date(row.lastTxAt)}</a></td>
         </tr>;})}</tbody>
