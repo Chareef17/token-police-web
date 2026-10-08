@@ -387,3 +387,5 @@ a.member-avatar-item:focus-visible{outline:2px solid var(--accent);outline-offse
 .header-nav .nav-icon{display:grid;place-items:center;width:24px;height:24px}
 .header-nav .nav-icon svg{display:block;width:22px;height:22px}
 @media(max-width:390px){.header-nav .nav-icon{width:21px;height:21px}.header-nav .nav-icon svg{width:19px;height:19px}}
+/* Keep loading rings circular when a long label shares their flex row. */
+.spinner{display:block;flex:0 0 20px;min-width:20px;min-height:20px;aspect-ratio:1}

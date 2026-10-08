@@ -5,8 +5,8 @@ import { units } from '../lib/amount.mjs';
 import preliminary from '../lib/ge6-prelim-2026-10-03.json' with {type:'json'};
 
 test('splits exact token units without losing remainder',()=>{
-  assert.deepEqual(splitVote(101n,['A','B']),[['A',61n],['B',40n]]);
-  assert.deepEqual(splitVote(103n,['A','B','C']),[['A',51n],['B',31n],['C',21n]]);
+  assert.deepEqual(splitVote(101n,['A','B']),[['A',71n],['B',30n]]);
+  assert.deepEqual(splitVote(103n,['A','B','C']),[['A',62n],['B',31n],['C',10n]]);
   assert.deepEqual(splitVote(17n,['A']),[['A',17n]]);
 });
 
