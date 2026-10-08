@@ -6,25 +6,27 @@ import { displayShort } from '@/lib/amount.mjs';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'ประมาณอันดับ GE6 ปัจจุบัน — คุณนักสืบโตเฟ่อ'};
 const date=(value:string)=>new Date(value).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'});
+const tier=(rank:number)=>rank===1?'first':rank<=7?'kami':rank<=12?'senbatsu':rank<=24?'under':rank<=36?'next':'outside';
 
 export default async function Page(){
   let data;
   try {data=await ge6CurrentRanking();} catch(error) {console.error(error);}
   return <div className="shell"><SiteHeader/><main className="board current-board">
     <h1>ประมาณอันดับ GE6 ปัจจุบัน</h1>
-    <p className="board-intro">ผลด่วน ณ 3 ต.ค. 2026 เวลา 12:00 น. รวมกับ GE6 ที่โหวตหลังจากนั้น</p>
     {!data?<p className="error" role="alert">ยังโหลดอันดับไม่ได้ กรุณาลองใหม่อีกครั้ง</p>:<>
       <div className="current-summary">
         <span>โหวตหลังผลด่วน <strong>{data.postVoteCount.toLocaleString('th-TH')}</strong> รายการ</span>
         <span>คาดการณ์ผู้รับได้ <strong>{displayShort(data.allocated)}</strong> GE6</span>
         <span>ยังระบุผู้รับไม่ได้ <strong>{displayShort(data.unassigned)}</strong> GE6</span>
       </div>
-      <p className="muted small current-method">คะแนนหลังผลด่วนใช้เมมเบอร์ที่กระเป๋าน่าจะโหวตจาก GE5, Thai-Japan และ Thai-Chinese (ปรับมูลค่าเหรียญ 6 ต่อ 68) หากมีรายชื่อที่กรอกเองจะใช้แทน แบ่ง 1 คน 100%, 2 คน 60/40, 3 คน 50/30/20</p>
+      <div className="current-legend" aria-label="สีแสดงกลุ่มอันดับ">
+        <span className="first">อันดับ 1</span><span className="kami">Kami 7 · 1–7</span><span className="senbatsu">Senbatsu · 1–12</span><span className="under">Under Girls · 13–24</span><span className="next">Next Girls · 25–36</span><span className="outside">ไม่ติดอันดับ · 37+</span>
+      </div>
       <div className="table-wrap"><table>
         <thead><tr><th>ลำดับ</th><th>ชื่อ</th><th className="num">จำนวน (ประมาณ)</th><th className="num">ช่วงอันดับที่เป็นไปได้</th></tr></thead>
-        <tbody>{data.rows.map((row:{name:string;rank:number;amount:string;published:boolean;bestRank:number;worstRank:number})=><tr key={row.name}>
+        <tbody>{data.rows.map((row:{name:string;rank:number;amount:string;bestRank:number;worstRank:number})=><tr key={row.name} className={`tier-${tier(row.rank)}`}>
           <td className="current-cell rank">{row.rank}</td>
-          <td className="current-cell who"><strong>{row.name}</strong>{!row.published&&<span className="tag off">ผลด่วนไม่เปิดเผยคะแนน</span>}</td>
+          <td className="current-cell who"><strong>{row.name}</strong></td>
           <td className="current-cell num"><strong>{displayShort(row.amount)}</strong></td>
           <td className="current-cell num">{row.bestRank===row.worstRank?row.bestRank:`${row.bestRank}–${row.worstRank}`}</td>
         </tr>)}</tbody>
