@@ -270,3 +270,7 @@ header{border-bottom-color:#ffffff80}
 .rank-card{grid-template-columns:auto minmax(0,1fr) minmax(0,32%) minmax(0,24%)}
 @media(max-width:760px){.rank-card{grid-template-columns:auto minmax(0,1fr) minmax(0,34%) minmax(0,29%)}}
 @media(max-width:520px){.rank-card{grid-template-columns:auto minmax(0,1fr) minmax(0,46%)}}
+/* "โหวตแล้ว" view: one stat column only. */
+.rank-card.rank-card-single{grid-template-columns:auto minmax(0,1fr) minmax(0,32%)}
+@media(max-width:760px){.rank-card.rank-card-single{grid-template-columns:auto minmax(0,1fr) minmax(0,40%)}}
+@media(max-width:520px){.rank-card.rank-card-single{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:'badge name vote'}.rank-card-single .rank-name{margin-bottom:0}.rank-card-single .rank-name+.rank-stat{text-align:right}}

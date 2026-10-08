@@ -34,13 +34,11 @@ async function RankingContent({includeHoldings}:{includeHoldings:boolean}){
       {tiers.map(t=>{const rows=data.rows.filter((row:Row)=>tier(row.rank)===t.key);return rows.length>0&&<section key={t.key} className={`rank-tier tier-${t.key}`} aria-label={t.label}>
         <p className="rank-tier-label">{t.label}</p>
         <ol className="rank-cards">{rows.map((row:Row)=><li key={row.name}>
-          <Link className="rank-card" href={`/member/${encodeURIComponent(row.name)}`} prefetch={false}>
+          <Link className={includeHoldings?"rank-card":"rank-card rank-card-single"} href={`/member/${encodeURIComponent(row.name)}`} prefetch={false}>
             <span className="rank-badge">{row.rank}</span>
             <span className="rank-name">{row.name}{row.name==='Nammonn'&&<span className="nammonn-star" aria-hidden="true">★</span>}</span>
             <span className="rank-stat"><span className="rank-stat-label">คาดจากโหวต</span><span className="rank-stat-value"><strong>{displayShort(row.votedAmount)}</strong>{includeHoldings&&<span className="rank-held">(+{displayShort(row.heldAmount)})</span>}</span></span>
-            {includeHoldings
-              ?<span className="rank-stat"><span className="rank-stat-label">รวมที่ถือ</span><strong className="rank-stat-value">{displayShort(row.amount)}</strong></span>
-              :<span className="rank-stat"><span className="rank-stat-label">ช่วงอันดับ</span><strong className="rank-stat-value">{row.bestRank===row.worstRank?row.bestRank:`${row.bestRank}–${row.worstRank}`}</strong></span>}
+            {includeHoldings&&<span className="rank-stat"><span className="rank-stat-label">รวมที่ถือ</span><strong className="rank-stat-value">{displayShort(row.amount)}</strong></span>}
           </Link>
         </li>)}</ol>
       </section>;})}
