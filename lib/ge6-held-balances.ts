@@ -1,19 +1,26 @@
 import { database } from './db';
 import { officialWallets } from './leaderboards';
-import { fetchAllHolders, tokens } from './token-holders.mjs';
+import { tokens } from './token-holders.mjs';
 
-let cache:{until:number;value:Promise<Map<string,bigint>>}|undefined;
+// Holder balances come from the token_holders snapshot that `pnpm sync:holders` refreshes
+// (GE6 every 5 minutes, BNK every 30 minutes), so pages never wait on TokenX.
+let ge6Cache:{until:number;value:Promise<Map<string,bigint>>}|undefined;
 
-// Live GE6 balances of every holder except official wallets, cached for 5 minutes.
+// GE6 balances of every holder except official wallets.
 export function ge6HeldBalances(){
-  if(cache&&cache.until>Date.now())return cache.value;
-  const value=fetchAllHolders(tokens.ge6,{maxPages:100,exclude:officialWallets,partialOk:true}) as Promise<Map<string,bigint>>;
-  cache={until:Date.now()+300000,value};
-  value.catch(()=>{if(cache?.value===value)cache=undefined;});
+  if(ge6Cache&&ge6Cache.until>Date.now())return ge6Cache.value;
+  const value=(async()=>{
+    const rows=(await (await database()).execute({sql:'SELECT address,value FROM token_holders WHERE token=?',args:[tokens.ge6]})).rows;
+    const balances=new Map<string,bigint>();
+    for(const row of rows){const address=String(row.address);if(!officialWallets.has(address))balances.set(address,BigInt(String(row.value)));}
+    return balances;
+  })();
+  ge6Cache={until:Date.now()+60000,value};
+  value.catch(()=>{if(ge6Cache?.value===value)ge6Cache=undefined;});
   return value;
 }
 
-// BNK balances for the given wallets, from the snapshot `pnpm sync:bnk` keeps in the database.
+// BNK balances for the given wallets.
 export async function bnkHeldBalances(addresses:string[]){
   const db=await database();const balances=new Map<string,bigint>();
   for(let start=0;start<addresses.length;start+=100){
