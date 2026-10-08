@@ -274,3 +274,32 @@ header{border-bottom-color:#ffffff80}
 .rank-card.rank-card-single{grid-template-columns:auto minmax(0,1fr) minmax(0,32%)}
 @media(max-width:760px){.rank-card.rank-card-single{grid-template-columns:auto minmax(0,1fr) minmax(0,40%)}}
 @media(max-width:520px){.rank-card.rank-card-single{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:'badge name vote'}.rank-card-single .rank-name{margin-bottom:0}.rank-card-single .rank-name+.rank-stat{text-align:right}}
+/* Compact one-line rows on phones: column labels once at the top instead of on every card. */
+.rank-cards-head{display:none}
+@media(max-width:760px){
+  .rank-cards-head,.rank-card,.rank-card.rank-card-single{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(0,31%) minmax(0,25%);grid-template-areas:none;align-items:center;gap:0 8px}
+  .rank-cards-head.rank-card-single,.rank-card.rank-card-single{grid-template-columns:30px minmax(0,1fr) minmax(0,38%)}
+  .rank-cards-head{position:sticky;top:0;z-index:2;margin:10px 0 0;padding:6px 12px 6px 9px;font-size:11px;color:var(--muted);background:var(--bg);border-radius:10px}
+  .rank-cards-head span:nth-child(n+3){text-align:right}
+  .rank-tier{margin-top:12px}
+  .rank-tier:first-of-type{margin-top:4px}
+  .rank-tier-label{margin:0 0 6px;font-size:13px}
+  .rank-cards{gap:5px}
+  .rank-card{padding:7px 12px 7px 9px;border-radius:12px}
+  .rank-badge,.rank-card .rank-badge{width:30px;height:30px;font-size:14px;border-radius:9px;grid-area:auto}
+  .rank-name,.rank-card .rank-name{grid-area:auto;margin:0;font-size:15px;line-height:1.25}
+  .rank-name .nammonn-star{font-size:14px;margin-left:4px}
+  .rank-stat,.rank-name+.rank-stat,.rank-stat+.rank-stat{grid-area:auto;padding-left:0;border-left:0;align-items:flex-end;text-align:right}
+  .rank-stat-label{display:none}
+  .rank-stat-value{font-size:15px;line-height:1.25}
+  .rank-held{display:block;margin:0;font-size:11px;line-height:1.2}
+}
+[data-theme=dark] .rank-cards-head{background:#0c1a2e}
+@media(max-width:360px){
+  .rank-cards-head,.rank-card,.rank-card.rank-card-single{grid-template-columns:28px minmax(0,1fr) minmax(0,28%) minmax(0,22%);gap:0 6px}
+  .rank-cards-head.rank-card-single,.rank-card.rank-card-single{grid-template-columns:28px minmax(0,1fr) minmax(0,36%)}
+  .rank-badge,.rank-card .rank-badge{width:28px;height:28px;font-size:13px}
+  .rank-name,.rank-card .rank-name{font-size:13px}
+  .rank-stat-value{font-size:13px}
+  .rank-held{font-size:10px}
+}
