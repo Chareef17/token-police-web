@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Fragment, Suspense } from 'react';
 import SiteHeader from '../site-header';
 import RankingPanel from './ranking-panel';
 import { ge6CurrentRanking } from '@/lib/ge6-current';
@@ -39,15 +39,17 @@ async function RankingContent({includeHoldings}:{includeHoldings:boolean}){
       <div className="current-legend" aria-label="สีแสดงกลุ่มอันดับ">
         <span className="senbatsu">Senbatsu · 1–12</span><span className="under">Under Girls · 13–24</span><span className="next">Next Girls · 25–36</span><span className="outside">ไม่ติดอันดับ · 37+</span>
       </div>
-      <div className="table-wrap"><table>
+      <div className="table-wrap responsive-card-table forecast-rank-table"><table>
         <thead><tr><th>ลำดับ</th><th>ชื่อ</th><th className="num">{includeHoldings?'จำนวน (+ในกระเป๋า)':'จำนวน (ประมาณ)'}</th>{includeHoldings&&<th className="num">ทั้งหมด</th>}<th className="num">ช่วงอันดับที่เป็นไปได้</th></tr></thead>
-        <tbody>{data.rows.map((row:{name:string;rank:number;amount:string;votedAmount:string;heldAmount:string;bestRank:number;worstRank:number})=><tr key={row.name} className={`tier-${tier(row.rank)}`}>
+        <tbody>{data.rows.map((row:{name:string;rank:number;amount:string;votedAmount:string;heldAmount:string;bestRank:number;worstRank:number})=><Fragment key={row.name}>
+          {[1,13,25,37].includes(row.rank)&&<tr className={`mobile-tier-heading tier-${tier(row.rank)}`}><th colSpan={includeHoldings?5:4}>{row.rank===1?'Senbatsu · 1–12':row.rank===13?'Under Girls · 13–24':row.rank===25?'Next Girls · 25–36':'ไม่ติดอันดับ · 37+'}</th></tr>}
+          <tr className={`tier-${tier(row.rank)}`}>
           <td className="current-cell rank">{row.rank}</td>
           <td className="current-cell who"><Link className="current-member-link" href={`/member/${encodeURIComponent(row.name)}`} prefetch={false}><strong>{row.name}</strong></Link></td>
-          <td className="current-cell num"><strong>{displayShort(row.votedAmount)}</strong>{includeHoldings&&<span className="current-held"> (+{displayShort(row.heldAmount)})</span>}</td>
-          {includeHoldings&&<td className="current-cell num"><strong>{displayShort(row.amount)}</strong></td>}
-          <td className="current-cell num">{row.bestRank===row.worstRank?row.bestRank:`${row.bestRank}–${row.worstRank}`}</td>
-        </tr>)}</tbody>
+          <td className="current-cell num" data-label="คาดจากโหวต"><strong>{displayShort(row.votedAmount)}</strong>{includeHoldings&&<span className="current-held"> (+{displayShort(row.heldAmount)})</span>}</td>
+          {includeHoldings&&<td className="current-cell num" data-label="รวมที่ถือ"><strong>{displayShort(row.amount)}</strong></td>}
+          <td className="current-cell num" data-label="ช่วงอันดับ">{row.bestRank===row.worstRank?row.bestRank:`${row.bestRank}–${row.worstRank}`}</td>
+        </tr></Fragment>)}</tbody>
       </table></div>
       <p className="muted small current-footnote">ผลด่วนประกาศคะแนนรายคนเพียง 36 อันดับแรก อีก 22 คนใช้ยอดคงเหลือรวมเฉลี่ยเป็นฐานประมาณการ ช่วงอันดับคำนวณจากฐานที่ยังไม่เปิดเผย (0–1,724.28 GE6 ต่อคน) โดยยึดการแบ่งคะแนนตามสมมติฐานข้างต้น จึงไม่ใช่ผลคะแนนหรือขอบเขตอันดับจริง</p>
       {includeHoldings&&<p className="muted small">ยอดในวงเล็บคือ GE6 ที่ยังอยู่ในกระเป๋าผู้ถือ ณ เวลาที่โหลดข้อมูล กระจายตามรายชื่อที่คาดว่าจะโหวตด้วยสัดส่วนเดิม จึงเป็นเพียงสมมติฐานว่าเหรียญเหล่านั้นจะถูกนำไปโหวต</p>}

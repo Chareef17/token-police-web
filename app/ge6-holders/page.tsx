@@ -18,12 +18,12 @@ async function HoldersContent(){
   let data;try{data=await ge6Holders(20);}catch(error){console.error(error);}
   return <>
     {!data?<p className="error" role="alert">TokenX Scan ยังไม่ตอบกลับ ลองใหม่อีกครั้ง</p>:<>
-      <div className="table-wrap"><table>
+      <div className="table-wrap responsive-card-table"><table>
         <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">GE6 ที่ถืออยู่</th></tr></thead>
         <tbody>{data.holders.map(h=>{const href='/?address='+h.address;return <tr key={h.address}>
           <td className="rank"><a href={href}>{h.rank}</a></td>
           <td className="who"><a href={href}>{h.name&&<strong>{h.name}</strong>}<code>{short(h.address)}</code>{h.contract&&<span className="tag off">contract</span>}</a></td>
-          <td className="num"><a href={href}><strong>{display(h.amount)}</strong></a></td>
+          <td className="num" data-label="GE6 ถืออยู่"><a href={href}><strong>{display(h.amount)}</strong></a></td>
         </tr>;})}</tbody>
       </table></div>
       <p className="muted small">อัปเดตเมื่อ {date(data.fetchedAt)}</p>

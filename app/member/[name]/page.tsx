@@ -43,16 +43,16 @@ async function MemberContent({name,page}:{name:string;page:number}){
       <p className="muted small">GE6 เป็นโหวตลับ จึงระบุผู้รับจริงของแต่ละกระเป๋าไม่ได้ ตารางนี้คาดจาก GE6 ที่โหวตแล้วทั้งหมด โดยใช้รายชื่อที่กรอกเองก่อนประวัติโหวต ยอดก่อนผลด่วนรวมอยู่ในคะแนนผลด่วนแล้ว จึงไม่บวกซ้ำในตารางอันดับปัจจุบัน</p>
       <h2>กระเป๋าที่คาดว่าโหวตให้ {name}</h2>
       <p className="muted small">ทั้งหมด {data.walletCount.toLocaleString()} กระเป๋า · หน้าละ 20 กระเป๋า · เรียงตามยอดโหวตที่คาดให้ {name} มากที่สุด</p>
-      <div className="table-wrap" tabIndex={0} aria-label={`กระเป๋าที่คาดว่าโหวตให้ ${name}`}><table>
+      <div className="table-wrap responsive-card-table" tabIndex={0} aria-label={`กระเป๋าที่คาดว่าโหวตให้ ${name}`}><table>
         <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดว่าโหวตให้ {name}</th><th className="num">GE6 โหวตแล้วทั้งกระเป๋า</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.wallets.map((wallet,index)=>{const href='/?address='+wallet.address;return <tr key={wallet.address}>
           <td className="rank"><a href={href}>{(data.page-1)*20+index+1}</a></td>
           <td className="who"><a href={href}>{wallet.name&&<strong>{wallet.name}</strong>}<code>{short(wallet.address)}</code></a></td>
-          <td className="num"><a href={href}>{displayShort(wallet.contributionVotes)}</a></td>
-          <td className="num"><a href={href}>{displayShort(wallet.voted)}</a></td>
-          <td className="vote-hint vote-hint-first"><a href={href}>{wallet.likely.length?wallet.likely.map((candidate,i)=><span className="candidate" key={candidate}>{i+1}. {candidate}</span>):'—'}</a></td>
-          <td className="vote-hint"><a href={href}>{wallet.topVote??'—'}</a></td>
-          <td className="last-activity"><a href={href}>{date(wallet.lastTxAt)}</a></td>
+          <td className="num" data-label={`คาดให้ ${name}`}><a href={href}>{displayShort(wallet.contributionVotes)}</a></td>
+          <td className="num" data-label="GE6 โหวตแล้ว"><a href={href}>{displayShort(wallet.voted)}</a></td>
+          <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร"><a href={href}>{wallet.likely.length?wallet.likely.map((candidate,i)=><span className="candidate" key={candidate}>{i+1}. {candidate}</span>):'—'}</a></td>
+          <td className="vote-hint" data-label="เคยโหวตมากสุด"><a href={href}>{wallet.topVote??'—'}</a></td>
+          <td className="last-activity" data-label="ล่าสุด"><a href={href}>{date(wallet.lastTxAt)}</a></td>
         </tr>;})}</tbody>
       </table></div>
       {data.pages>1&&<nav className="voters-pagination" aria-label="หน้ากระเป๋า"><span>หน้า {data.page}/{data.pages}</span><div>{data.page>1&&<Link className="secondary" prefetch={false} href={data.page===2?base:`${base}?page=${data.page-1}`}>ก่อนหน้า</Link>}{data.page<data.pages&&<Link className="secondary" prefetch={false} href={`${base}?page=${data.page+1}`}>ถัดไป</Link>}</div></nav>}

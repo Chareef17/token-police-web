@@ -20,17 +20,17 @@ async function NammonnContent(){
   return <>
     {!fans?<p className="error" role="alert">ยังโหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง</p>:!fans.length?<p className="muted">ยังไม่มีข้อมูล</p>:<>
       <p className="muted small">ทั้งหมด {fans.length.toLocaleString()} กระเป๋า</p>
-      <div className="table-wrap" tabIndex={0} aria-label="ตารางสายเปย์น้ำมนต์"><table>
+      <div className="table-wrap responsive-card-table" tabIndex={0} aria-label="ตารางสายเปย์น้ำมนต์"><table>
         <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">GE6 โหวตแล้ว</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{fans.map((f,i)=>{const href='/?address='+f.address;return <tr key={f.address}>
           <td className="rank"><a href={href}>{i+1}</a></td>
           <td className="who"><a href={href}>{f.name&&<strong>{f.name}</strong>}<code>{short(f.address)}</code></a></td>
-          <td className="num"><a href={href}><strong>{display(f.voted)}</strong></a></td>
-          <td className="num"><a href={href}>{f.ge6===null?'—':display(f.ge6)}</a></td>
-          <td className="num"><a href={href}>{f.bnk===null?'—':display(f.bnk)}</a></td>
-          <td className="vote-hint vote-hint-first"><a href={href}>{f.likely.length?f.likely.map((candidate,index)=><span className="candidate" key={candidate}>{index+1}. {candidate}</span>):'—'}</a></td>
-          <td className="vote-hint"><a href={href}>{f.topVote??'—'}</a></td>
-          <td className="last-activity"><a href={href}>{date(f.lastTxAt)}</a></td>
+          <td className="num" data-label="GE6 โหวตแล้ว"><a href={href}><strong>{display(f.voted)}</strong></a></td>
+          <td className="num" data-label="GE6 ถืออยู่"><a href={href}>{f.ge6===null?'—':display(f.ge6)}</a></td>
+          <td className="num" data-label="BNK ถืออยู่"><a href={href}>{f.bnk===null?'—':display(f.bnk)}</a></td>
+          <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร"><a href={href}>{f.likely.length?f.likely.map((candidate,index)=><span className="candidate" key={candidate}>{index+1}. {candidate}</span>):'—'}</a></td>
+          <td className="vote-hint" data-label="เคยโหวตมากสุด"><a href={href}>{f.topVote??'—'}</a></td>
+          <td className="last-activity" data-label="ล่าสุด"><a href={href}>{date(f.lastTxAt)}</a></td>
         </tr>;})}</tbody>
       </table></div>
     </>}
