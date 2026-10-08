@@ -1,6 +1,7 @@
 import { database } from './db';
 import { amount, sum, units } from './amount.mjs';
 import { tokenxGet } from './tokenx-transport.mjs';
+import { voterDetails, type VoterDetails } from './ge6-voters';
 const GE6_TOKEN='0x2f5c60bde7a5ebd2b116bb03cb5232fa1ea55f1c';
 // Not fans: the GE6 voting contract, the treasury that received the whole mint, and every wallet the
 // treasury sent GE6 to directly (official distribution wallets), as traced on TokenX Scan in Oct 2026.
@@ -15,7 +16,8 @@ export const officialWallets=new Set([
 ]);
 export const fanEvents=['GE5','Thai-Japan 2026'] as const;
 type FanEvent=typeof fanEvents[number];
-export type Fan={address:string;name:string|null;events:Partial<Record<FanEvent,{nammonn:string;top:boolean}>>;total:string};
+type FanBase={address:string;events:Partial<Record<FanEvent,{nammonn:string;top:boolean}>>;total:string};
+export type Fan=FanBase & VoterDetails & {voted:string};
 export type Holder={rank:number;address:string;name:string|null;amount:string;contract:boolean};
 // Short in-memory cache per server instance: historical votes never change, balances move slowly.
 const cache=new Map<string,{until:number;value:Promise<unknown>}>();
@@ -33,14 +35,14 @@ const fanList=()=>cached('fans',3600000,async()=>{
   const rows=(await (await database()).execute({sql:`SELECT address,event,member,amount FROM votes WHERE event IN (${fanEvents.map(()=>'?').join(',')}) AND address IS NOT NULL AND address IN (SELECT address FROM votes WHERE member='Nammonn' AND event IN (${fanEvents.map(()=>'?').join(',')}))`,args:[...fanEvents,...fanEvents]})).rows;
   const totals=new Map<string,Map<FanEvent,Map<string,bigint>>>();
   for(const r of rows){
-    const address=String(r.address),event=String(r.event) as FanEvent,member=String(r.member);
+    const address=String(r.address).toLowerCase(),event=String(r.event) as FanEvent,member=String(r.member);
     const events=totals.get(address)??new Map();totals.set(address,events);
     const members=events.get(event)??new Map<string,bigint>();events.set(event,members);
     members.set(member,(members.get(member)??0n)+units(String(r.amount)));
   }
-  const fans:Fan[]=[];
+  const fans:FanBase[]=[];
   for(const [address,events] of totals){
-    const fan:Fan={address,name:null,events:{},total:'0'};let top=false;
+    const fan:FanBase={address,events:{},total:'0'};let top=false;
     for(const [event,members] of events){
       const nammonn=members.get('Nammonn');if(nammonn===undefined)continue;
       const isTop=[...members].every(([member,value])=>member==='Nammonn'||value<nammonn);
@@ -54,8 +56,19 @@ const fanList=()=>cached('fans',3600000,async()=>{
 });
 // Names are looked up on every request so newly set names show up immediately.
 export async function nammonnFans(){
-  const fans=await fanList();const names=await namesFor(fans.map(f=>f.address));
-  return fans.map(f=>({...f,name:names.get(f.address)??null}));
+  const fans=await fanList();
+  if(!fans.length)return [] as Fan[];
+  const addresses=fans.map(f=>f.address);
+  const [details,ge6Rows]=await Promise.all([
+    voterDetails(addresses),
+    (await database()).execute({sql:`SELECT address,amount FROM ge6_events WHERE address IN (${addresses.map(()=>'?').join(',')})`,args:addresses}),
+  ]);
+  const voted=new Map<string,bigint>();
+  for(const row of ge6Rows.rows){
+    const address=String(row.address).toLowerCase();
+    voted.set(address,(voted.get(address)??0n)+units(String(row.amount)));
+  }
+  return fans.map(f=>({...f,...details.get(f.address)!,voted:amount(voted.get(f.address)??0n)}));
 }
 // Top GE6 balances straight from TokenX (sorted by balance there).
 const holderList=(limit:number)=>cached('holders:'+limit,300000,async()=>{

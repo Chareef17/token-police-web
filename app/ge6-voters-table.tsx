@@ -5,12 +5,28 @@ type Row={rank:number;address:string;name:string|null;voted:string;bnk:string|nu
 type Board={rows:Row[];page:number;pages:number;total:number;fetchedAt:string};
 const short=(address:string)=>address.slice(0,8)+'…'+address.slice(-6);
 const date=(value:string|null)=>value?new Date(value).toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'}):'—';
+const pageFromUrl=()=>{
+  if(typeof window==='undefined')return 1;
+  const raw=new URLSearchParams(window.location.search).get('page');
+  return raw&&/^[1-9]\d{0,5}$/.test(raw)?Number(raw):1;
+};
 export default function Ge6VotersTable(){
-  const [page,setPage]=useState(1);
+  const [page,setPage]=useState(pageFromUrl);
   const [retry,setRetry]=useState(0);
   const [data,setData]=useState<Board|null>(null);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState('');
+  useEffect(()=>{
+    const restore=()=>setPage(pageFromUrl());
+    window.addEventListener('popstate',restore);
+    return ()=>window.removeEventListener('popstate',restore);
+  },[]);
+  const changePage=(next:number)=>{
+    const url=new URL(window.location.href);
+    if(next<=1)url.searchParams.delete('page');else url.searchParams.set('page',String(next));
+    window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);
+    setPage(next);
+  };
   useEffect(()=>{
     const controller=new AbortController();
     setLoading(true);setError('');
@@ -37,7 +53,7 @@ export default function Ge6VotersTable(){
           <td className="last-activity"><a href={href}>{date(row.lastTxAt)}</a></td>
         </tr>;})}</tbody>
       </table></div>
-      <div className="voters-pagination"><span>ทั้งหมด {data.total.toLocaleString()} กระเป๋า · หน้า {data.page}/{data.pages}</span><div><button className="secondary" disabled={page<=1} onClick={()=>setPage(p=>p-1)}>ก่อนหน้า</button><button className="secondary" disabled={page>=data.pages} onClick={()=>setPage(p=>p+1)}>ถัดไป</button></div></div>
+      <div className="voters-pagination"><span>ทั้งหมด {data.total.toLocaleString()} กระเป๋า · หน้า {data.page}/{data.pages}</span><div><button className="secondary" disabled={page<=1} onClick={()=>changePage(page-1)}>ก่อนหน้า</button><button className="secondary" disabled={page>=data.pages} onClick={()=>changePage(page+1)}>ถัดไป</button></div></div>
       <p className="muted small">“น่าจะโหวตใคร” ใช้เฉพาะ GE5, Thai-Chinese และ Thai-Japan โดยกรองผู้สมัคร GE6 · อันดับย้อนหลังถ่วงน้ำหนัก Thai-Chinese ประมาณ 6 บาท/เหรียญ เทียบกับงานอื่น 68 บาท/เหรียญ · ยอดคงเหลือและธุรกรรมล่าสุดจาก TokenX Scan · อัปเดต {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
     </>}
   </section>;

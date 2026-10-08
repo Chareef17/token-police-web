@@ -11,6 +11,7 @@ const chinesePrice=6n;
 const otherPrice=68n;
 type Ranked={address:string;voted:string;rank:number};
 type Activity={date:string|null};
+export type VoterDetails={name:string|null;bnk:string|null;ge6:string|null;lastTxAt:string|null;likely:string[];topVote:string|null};
 const activityCache=new Map<string,{until:number;value:Promise<Activity>}>();
 let rankingCache:{until:number;value:Promise<Ranked[]>}|undefined;
 
@@ -45,64 +46,71 @@ async function latestTransaction(address:string):Promise<Activity>{
   return value;
 }
 
+export async function voterDetails(addresses:string[]):Promise<Map<string,VoterDetails>>{
+  const unique=[...new Set(addresses.map(address=>address.toLowerCase()))];
+  const names=new Map<string,string>();
+  const manual=new Map<string,string[]>();
+  const preferences=new Map<string,{likely:string[];topVote:string|null}>();
+  if(unique.length){
+    const db=await database();
+    const overall=new Map<string,Map<string,bigint>>();
+    const likelyTotals=new Map<string,Map<string,bigint>>();
+    for(let start=0;start<unique.length;start+=100){
+      const slice=unique.slice(start,start+100),placeholders=slice.map(()=>'?').join(',');
+      const [nameRows,voteRows,manualRows]=await db.batch([
+        {sql:`SELECT address,name FROM names WHERE address IN (${placeholders})`,args:slice},
+        {sql:`SELECT address,event,member,amount FROM votes WHERE event IN (${[...memberVoteEvents].map(()=>'?').join(',')}) AND address IN (${placeholders})`,args:[...memberVoteEvents,...slice]},
+        {sql:`SELECT address,rank1,rank2,rank3 FROM manual_predictions WHERE address IN (${placeholders})`,args:slice},
+      ],'read');
+      for(const row of nameRows.rows)names.set(String(row.address).toLowerCase(),String(row.name));
+      for(const row of manualRows.rows){
+        const members=[row.rank1,row.rank2,row.rank3].filter(v=>v!=null).map(String);
+        if(members.length>0)manual.set(String(row.address).toLowerCase(),members);
+      }
+      for(const row of voteRows.rows){
+        const address=String(row.address).toLowerCase(),event=String(row.event),member=String(row.member).trim();
+        if(!member||member==='Unknown')continue;
+        // Compare historical support at an estimated baht value; keep integer precision.
+        const value=units(String(row.amount))*(event==='Thai-Chinese 2025'?chinesePrice:otherPrice);
+        const members=overall.get(address)??new Map<string,bigint>();overall.set(address,members);
+        members.set(member,(members.get(member)??0n)+value);
+        if(likelyVoteEvents.has(event)&&ge6Candidates.has(member.toLowerCase())){
+          const candidates=likelyTotals.get(address)??new Map<string,bigint>();likelyTotals.set(address,candidates);
+          candidates.set(member,(candidates.get(member)??0n)+value);
+        }
+      }
+    }
+    const sorted=(entries:[string,bigint][])=>entries.sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1);
+    for(const address of unique){
+      const sortedVotes=sorted([...(overall.get(address)??new Map())]);
+      const likely=sorted([...(likelyTotals.get(address)??new Map())]).slice(0,3).map(([member])=>member);
+      const topVote=sortedVotes[0]?.[0]??null;
+      preferences.set(address,{likely,topVote});
+    }
+  }
+  const result=new Map<string,VoterDetails>();
+  // Limit upstream requests while allowing the page to load promptly.
+  let cursor=0;
+  await Promise.all(Array.from({length:Math.min(5,unique.length)},async()=>{
+    while(cursor<unique.length){
+      const index=cursor++;
+      const address=unique[index];
+      const [balance,activity]=await Promise.allSettled([balances(address),latestTransaction(address)]);
+      result.set(address,{name:names.get(address)??null,likely:manual.get(address)??preferences.get(address)?.likely??[],topVote:preferences.get(address)?.topVote??null,
+        bnk:balance.status==='fulfilled'?balance.value.balances.find(b=>b.symbol==='BNK')?.amount??null:null,
+        ge6:balance.status==='fulfilled'?balance.value.balances.find(b=>b.symbol==='GE6')?.amount??null:null,
+        lastTxAt:activity.status==='fulfilled'?activity.value.date:null});
+    }
+  }));
+  return result;
+}
+
 export async function ge6Voters(page=1){
   const ranked=await ranking();
   const pages=Math.max(1,Math.ceil(ranked.length/PAGE_SIZE));
   const current=Math.min(Math.max(1,page),pages);
   const slice=ranked.slice((current-1)*PAGE_SIZE,current*PAGE_SIZE);
-  const names=new Map<string,string>();
-  const manual=new Map<string,string[]>();
-  const preferences=new Map<string,{likely:string[];topVote:string|null}>();
-  if(slice.length){
-    const placeholders=slice.map(()=>'?').join(',');
-    const db=await database();
-    const [nameRows,voteRows,manualRows]=await db.batch([
-      {sql:`SELECT address,name FROM names WHERE address IN (${placeholders})`,args:slice.map(r=>r.address)},
-      {sql:`SELECT address,event,member,amount FROM votes WHERE event IN (${[...memberVoteEvents].map(()=>'?').join(',')}) AND address IN (${placeholders})`,args:[...memberVoteEvents,...slice.map(r=>r.address)]},
-      {sql:`SELECT address,rank1,rank2,rank3 FROM manual_predictions WHERE address IN (${placeholders})`,args:slice.map(r=>r.address)},
-    ],'read');
-    for(const row of nameRows.rows)names.set(String(row.address).toLowerCase(),String(row.name));
-    for(const row of manualRows.rows){
-      const members=[row.rank1,row.rank2,row.rank3].filter(v=>v!=null).map(String);
-      if(members.length>0)manual.set(String(row.address).toLowerCase(),members);
-    }
-    const overall=new Map<string,Map<string,bigint>>();
-    const likelyTotals=new Map<string,Map<string,bigint>>();
-    for(const row of voteRows.rows){
-      const address=String(row.address).toLowerCase(),event=String(row.event),member=String(row.member).trim();
-      if(!member||member==='Unknown')continue;
-      // Compare historical support at an estimated baht value; keep integer precision.
-      const value=units(String(row.amount))*(event==='Thai-Chinese 2025'?chinesePrice:otherPrice);
-      const members=overall.get(address)??new Map<string,bigint>();overall.set(address,members);
-      members.set(member,(members.get(member)??0n)+value);
-      if(likelyVoteEvents.has(event)&&ge6Candidates.has(member.toLowerCase())){
-        const candidates=likelyTotals.get(address)??new Map<string,bigint>();likelyTotals.set(address,candidates);
-        candidates.set(member,(candidates.get(member)??0n)+value);
-      }
-    }
-    const sorted=(entries:[string,bigint][])=>entries.sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1);
-    for(const row of slice){
-      const sortedVotes=sorted([...(overall.get(row.address)??new Map())]);
-      const likely=sorted([...(likelyTotals.get(row.address)??new Map())]).slice(0,3).map(([member])=>member);
-      const topVote=sortedVotes[0]?.[0]??null;
-      preferences.set(row.address,{likely,topVote});
-    }
-  }
-  const result=Array<{
-    rank:number;address:string;name:string|null;voted:string;bnk:string|null;ge6:string|null;lastTxAt:string|null;likely:string[];topVote:string|null;
-  }>(slice.length);
-  // Limit upstream requests while allowing the page to load promptly.
-  let cursor=0;
-  await Promise.all(Array.from({length:Math.min(5,slice.length)},async()=>{
-    while(cursor<slice.length){
-      const index=cursor++;
-      const row=slice[index];
-      const [balance,activity]=await Promise.allSettled([balances(row.address),latestTransaction(row.address)]);
-      result[index]={...row,name:names.get(row.address)??null,likely:manual.get(row.address)??preferences.get(row.address)?.likely??[],topVote:preferences.get(row.address)?.topVote??null,
-        bnk:balance.status==='fulfilled'?balance.value.balances.find(b=>b.symbol==='BNK')?.amount??null:null,
-        ge6:balance.status==='fulfilled'?balance.value.balances.find(b=>b.symbol==='GE6')?.amount??null:null,
-        lastTxAt:activity.status==='fulfilled'?activity.value.date:null};
-    }
-  }));
+  const details=await voterDetails(slice.map(row=>row.address));
+  const result=slice.map(row=>({...row,...details.get(row.address)!}));
   return {rows:result,page:current,pages,total:ranked.length,fetchedAt:new Date().toISOString()};
 }
