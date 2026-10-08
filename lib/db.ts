@@ -45,6 +45,13 @@ export async function searchLog(limit = 500) {
   const entries = list.rows.map(r => ({ address: String(r.address), name: r.name == null ? null : String(r.name), count: Number(r.count), first_at: String(r.first_at), last_at: String(r.last_at) })) as SearchEntry[];
   return { entries, addresses: Number(totals.rows[0].addresses), searches: Number(totals.rows[0].searches) };
 }
+// Wallets whose iAM48 wallet code starts with the given digits (admin only).
+export async function findWalletCodes(code: string, limit = 20) {
+  const digits = code.replace(/\D/g, '');
+  if (digits.length < 4) return [];
+  const rows = (await (await database()).execute({ sql: 'SELECT w.code,w.address,n.name FROM wallet_codes w LEFT JOIN names n ON n.address=w.address WHERE w.code LIKE ? ORDER BY w.code LIMIT ?', args: [digits + '%', limit] })).rows;
+  return rows.map(r => ({ code: String(r.code), address: String(r.address), name: r.name == null ? null : String(r.name) }));
+}
 export async function findNames(query: string, limit = 8) {
   const q = query.normalize('NFC').trim().toLowerCase();
   if (!q) return [];
