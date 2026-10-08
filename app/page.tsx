@@ -1,7 +1,7 @@
 'use client';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { display } from '@/lib/amount.mjs';
+import { display, displayShort } from '@/lib/amount.mjs';
 import SiteHeader from './site-header';
 import AddressCopy from './address-copy';
 import Ge6VotersTable from './ge6-voters-table';
@@ -79,7 +79,7 @@ export default function Home(){
           <p className="muted small table-caption">{data.ge6.items.length===data.ge6.transactions?`ทั้งหมด ${data.ge6.transactions.toLocaleString()} รายการ`:`${data.ge6.items.length.toLocaleString()} รายการล่าสุด · ทั้งหมด ${data.ge6.transactions.toLocaleString()} รายการ`}</p>
         
 </section>
-        <section className="balance-section" aria-label="ยอดเหรียญคงเหลือ"><h2 className="section-title">คงเหลือในกระเป๋า</h2><div className="stats balance-stats">{['BNK','GE6'].map(symbol=><article className="stat" key={symbol}><div className="stat-top"><span>{symbol} คงเหลือในกระเป๋า</span><Icon kind="wallet"/></div><strong className="balance-value">{balanceLoading?<span className="skeleton"/>:balance?display(balance.balances.find(r=>r.symbol===symbol)!.amount):'—'}</strong><div className="stat-bottom"><span>{symbol} tokens</span><span>{balanceLoading?'กำลังอ่านยอด…':balance?'ยอดคงเหลือ':'ยังอ่านยอดไม่ได้'}</span></div></article>)}</div>
+        <section className="balance-section" aria-label="ยอดเหรียญคงเหลือ"><h2 className="section-title">คงเหลือในกระเป๋า</h2><div className="stats balance-stats">{['BNK','GE6'].map(symbol=><article className="stat" key={symbol}><div className="stat-top"><span>{symbol} คงเหลือในกระเป๋า</span><Icon kind="wallet"/></div><strong className="balance-value" title={balance?balance.balances.find(r=>r.symbol===symbol)!.amount:undefined}>{balanceLoading?<span className="skeleton"/>:balance?displayShort(balance.balances.find(r=>r.symbol===symbol)!.amount):'—'}</strong><div className="stat-bottom"><span>{symbol} tokens</span><span>{balanceLoading?'กำลังอ่านยอด…':balance?'ยอดคงเหลือ':'ยังอ่านยอดไม่ได้'}</span></div></article>)}</div>
           <div className="freshness"><p>ยอดเหรียญ {balance?date(balance.fetchedAt):'รอข้อมูลจาก TokenX Scan'}</p></div>
           {balanceError&&<div className="balance-error" role="status">{balanceError}<button className="text-button" onClick={()=>void loadBalance(data.address,serial.current)}>ลองอีกครั้ง</button></div>}
         </section>
