@@ -38,7 +38,7 @@ export default function Ge6VotersTable(){
         </tr>;})}</tbody>
       </table></div>
       <div className="voters-pagination"><span>ทั้งหมด {data.total.toLocaleString()} กระเป๋า · หน้า {data.page}/{data.pages}</span><div><button className="secondary" disabled={page<=1} onClick={()=>setPage(p=>p-1)}>ก่อนหน้า</button><button className="secondary" disabled={page>=data.pages} onClick={()=>setPage(p=>p+1)}>ถัดไป</button></div></div>
-      <p className="muted small">อันดับย้อนหลังถ่วงน้ำหนัก Thai-Chinese ประมาณ 6 บาท/เหรียญ เทียบกับงานอื่น 68 บาท/เหรียญ · “น่าจะโหวตใคร” กรองเฉพาะผู้สมัคร GE6 · ยอดคงเหลือและธุรกรรมล่าสุดจาก TokenX Scan · อัปเดต {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
+      <p className="muted small">“น่าจะโหวตใคร” ใช้เฉพาะ GE5, Thai-Chinese และ Thai-Japan โดยกรองผู้สมัคร GE6 · อันดับย้อนหลังถ่วงน้ำหนัก Thai-Chinese ประมาณ 6 บาท/เหรียญ เทียบกับงานอื่น 68 บาท/เหรียญ · ยอดคงเหลือและธุรกรรมล่าสุดจาก TokenX Scan · อัปเดต {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
     </>}
   </section>;
 }

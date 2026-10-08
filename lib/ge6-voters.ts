@@ -6,6 +6,7 @@ import { ge6Candidates } from './ge6-candidates';
 
 const PAGE_SIZE=20;
 const memberVoteEvents=new Set(['GE3','GE4','GE5','Songkran 2024','365-Nichi 2024','Thai-Japan 2026','Thai-Chinese 2025']);
+const likelyVoteEvents=new Set(['GE5','Thai-Japan 2026','Thai-Chinese 2025']);
 const chinesePrice=6n;
 const otherPrice=68n;
 type Ranked={address:string;voted:string;rank:number};
@@ -60,6 +61,7 @@ export async function ge6Voters(page=1){
     ],'read');
     for(const row of nameRows.rows)names.set(String(row.address).toLowerCase(),String(row.name));
     const overall=new Map<string,Map<string,bigint>>();
+    const likelyTotals=new Map<string,Map<string,bigint>>();
     for(const row of voteRows.rows){
       const address=String(row.address).toLowerCase(),event=String(row.event),member=String(row.member).trim();
       if(!member||member==='Unknown')continue;
@@ -67,11 +69,15 @@ export async function ge6Voters(page=1){
       const value=units(String(row.amount))*(event==='Thai-Chinese 2025'?chinesePrice:otherPrice);
       const members=overall.get(address)??new Map<string,bigint>();overall.set(address,members);
       members.set(member,(members.get(member)??0n)+value);
+      if(likelyVoteEvents.has(event)&&ge6Candidates.has(member.toLowerCase())){
+        const candidates=likelyTotals.get(address)??new Map<string,bigint>();likelyTotals.set(address,candidates);
+        candidates.set(member,(candidates.get(member)??0n)+value);
+      }
     }
     const sorted=(entries:[string,bigint][])=>entries.sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1);
     for(const row of slice){
       const sortedVotes=sorted([...(overall.get(row.address)??new Map())]);
-      const likely=sortedVotes.filter(([member])=>ge6Candidates.has(member.toLowerCase())).slice(0,3).map(([member])=>member);
+      const likely=sorted([...(likelyTotals.get(row.address)??new Map())]).slice(0,3).map(([member])=>member);
       const topVote=sortedVotes[0]?.[0]??null;
       preferences.set(row.address,{likely,topVote});
     }
