@@ -51,15 +51,21 @@ export async function ge6Voters(page=1){
   const current=Math.min(Math.max(1,page),pages);
   const slice=ranked.slice((current-1)*PAGE_SIZE,current*PAGE_SIZE);
   const names=new Map<string,string>();
+  const manual=new Map<string,string[]>();
   const preferences=new Map<string,{likely:string[];topVote:string|null}>();
   if(slice.length){
     const placeholders=slice.map(()=>'?').join(',');
     const db=await database();
-    const [nameRows,voteRows]=await db.batch([
+    const [nameRows,voteRows,manualRows]=await db.batch([
       {sql:`SELECT address,name FROM names WHERE address IN (${placeholders})`,args:slice.map(r=>r.address)},
       {sql:`SELECT address,event,member,amount FROM votes WHERE event IN (${[...memberVoteEvents].map(()=>'?').join(',')}) AND address IN (${placeholders})`,args:[...memberVoteEvents,...slice.map(r=>r.address)]},
+      {sql:`SELECT address,rank1,rank2,rank3 FROM manual_predictions WHERE address IN (${placeholders})`,args:slice.map(r=>r.address)},
     ],'read');
     for(const row of nameRows.rows)names.set(String(row.address).toLowerCase(),String(row.name));
+    for(const row of manualRows.rows){
+      const members=[row.rank1,row.rank2,row.rank3].filter(v=>v!=null).map(String);
+      if(members.length===3)manual.set(String(row.address).toLowerCase(),members);
+    }
     const overall=new Map<string,Map<string,bigint>>();
     const likelyTotals=new Map<string,Map<string,bigint>>();
     for(const row of voteRows.rows){
@@ -92,7 +98,7 @@ export async function ge6Voters(page=1){
       const index=cursor++;
       const row=slice[index];
       const [balance,activity]=await Promise.allSettled([balances(row.address),latestTransaction(row.address)]);
-      result[index]={...row,name:names.get(row.address)??null,likely:preferences.get(row.address)?.likely??[],topVote:preferences.get(row.address)?.topVote??null,
+      result[index]={...row,name:names.get(row.address)??null,likely:manual.get(row.address)??preferences.get(row.address)?.likely??[],topVote:preferences.get(row.address)?.topVote??null,
         bnk:balance.status==='fulfilled'?balance.value.balances.find(b=>b.symbol==='BNK')?.amount??null:null,
         ge6:balance.status==='fulfilled'?balance.value.balances.find(b=>b.symbol==='GE6')?.amount??null:null,
         lastTxAt:activity.status==='fulfilled'?activity.value.date:null};

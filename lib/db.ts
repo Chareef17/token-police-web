@@ -10,10 +10,11 @@ export function database() {
 }
 export async function wallet(address: string) {
   const db = await database();
-  const [votes, meta, name] = await db.batch([
+  const [votes, meta, name, prediction] = await db.batch([
     { sql: 'SELECT id,event,member,amount,tx_hash,voted_at FROM votes WHERE address=? OR wallet=? ORDER BY voted_at DESC,id DESC', args: [address, address] },
     'SELECT key,value FROM metadata',
     { sql: 'SELECT name,version,updated_at FROM names WHERE address=?', args: [address] },
+    { sql: 'SELECT rank1,rank2,rank3,version,updated_at FROM manual_predictions WHERE address=?', args: [address] },
   ], 'read');
   const rows = votes.rows.map(r => ({ id: String(r.id), event: String(r.event), member: String(r.member), amount: String(r.amount), tx_hash: r.tx_hash == null ? null : String(r.tx_hash), voted_at: r.voted_at == null ? null : String(r.voted_at) })) as Vote[];
   const metadata = Object.fromEntries(meta.rows.map(r => [String(r.key), String(r.value)]));
@@ -27,7 +28,8 @@ export async function wallet(address: string) {
   const ge6 = rows.filter(r => r.event === 'GE6');
   const historical = rows.filter(r => r.event !== 'GE6');
   const named = name.rows[0];
-  return { address, name: named ? { name: String(named.name), version: Number(named.version), updated_at: String(named.updated_at) } : null, events, ge6: { amount: sum(ge6.map(r => r.amount)), transactions: ge6.length, items: ge6.slice(0, 100) }, transactions: historical.slice(0, 100), transactionCount: historical.length, importedAt: metadata.importedAt, ge6Status: JSON.parse(metadata.ge6Status || 'null') };
+  const manual=prediction.rows[0];
+  return { address, name: named ? { name: String(named.name), version: Number(named.version), updated_at: String(named.updated_at) } : null, manualPrediction:manual?{members:[manual.rank1,manual.rank2,manual.rank3].filter(v=>v!=null).map(String),version:Number(manual.version),updated_at:String(manual.updated_at)}:null, events, ge6: { amount: sum(ge6.map(r => r.amount)), transactions: ge6.length, items: ge6.slice(0, 100) }, transactions: historical.slice(0, 100), transactionCount: historical.length, importedAt: metadata.importedAt, ge6Status: JSON.parse(metadata.ge6Status || 'null') };
 }
 export async function logSearch(address: string) {
   const now = new Date().toISOString();
