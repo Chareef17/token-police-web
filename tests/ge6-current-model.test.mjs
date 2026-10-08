@@ -21,3 +21,12 @@ test('preliminary snapshot and neutral unpublished scores conserve the on-chain 
   assert.equal(ranked.filter(row=>!row.published).length,22);
   assert.equal(official.size,36);
 });
+
+test('adding projected held tokens changes the ranking and total without changing the vote-only amount',()=>{
+  const candidates=[...preliminary.results.map(([name])=>name),'Unpublished'];
+  const voted=makeRanking(candidates,preliminary.results,new Map());
+  const withHoldings=makeRanking(candidates,preliminary.results,new Map([['Nammonn',units('25000')]]));
+  assert.equal(voted.find(row=>row.name==='Nammonn').amount,'3951.53');
+  assert.equal(withHoldings[0].name,'Nammonn');
+  assert.equal(withHoldings[0].amount,'28951.53');
+});
