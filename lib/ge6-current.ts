@@ -20,11 +20,17 @@ async function calculateRanking(mode:RankingMode='votes') {
   const votes = (await db.execute({sql:'SELECT address,amount,voted_at FROM ge6_events WHERE julianday(voted_at)>julianday(?)',args:[preliminary.cutoff]})).rows;
   const wallets = new Map<string,bigint>();
   let lastVoteAt: string | null = null;
+  // Bangkok is UTC+7 year-round. Compare against midnight today in Bangkok.
+  const bangkokOffsetMs=7*60*60*1000;
+  const todayStartUtc=Math.floor((Date.now()+bangkokOffsetMs)/86400000)*86400000-bangkokOffsetMs;
+  let todayVotes=0n;
   for (const row of votes) {
     const address = String(row.address).toLowerCase();
     if (!addressPattern.test(address)) continue;
-    wallets.set(address,(wallets.get(address)??0n)+units(String(row.amount)));
+    const voteAmount=units(String(row.amount));
+    wallets.set(address,(wallets.get(address)??0n)+voteAmount);
     const at = String(row.voted_at);
+    if(Date.parse(at)>=todayStartUtc)todayVotes+=voteAmount;
     if (!lastVoteAt || Date.parse(at)>Date.parse(lastVoteAt)) lastVoteAt=at;
   }
   const heldBalances=await heldPromise;
@@ -104,7 +110,7 @@ async function calculateRanking(mode:RankingMode='votes') {
     .map((row:{name:string;amount:string})=>({...row,votedAmount:votedByName.get(row.name)!,heldAmount:amount(heldAdditions.get(row.name)??0n),bnkAmount:amount(bnkAdditions.get(row.name)??0n)}));
   return {rows,mode,includeHoldings,contributions,additions,heldAdditions,
     cutoff:preliminary.cutoff,lastVoteAt,postVoteCount:votes.length,walletCount:wallets.size,manualWallets,
-    allocated:amount(allocated),unassigned:amount(unassigned),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),fetchedAt:new Date().toISOString()};
+    allocated:amount(allocated),unassigned:amount(unassigned),todayVotes:amount(todayVotes),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),fetchedAt:new Date().toISOString()};
 }
 
 export async function ge6CurrentRanking(mode:RankingMode='votes'){
