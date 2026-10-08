@@ -15,7 +15,7 @@ const tier=(rank:number)=>rank<=12?'senbatsu':rank<=24?'under':rank<=36?'next':'
 export default async function Page({searchParams}:{searchParams:Promise<{includeHoldings?:string}>}){
   const includeHoldings=(await searchParams).includeHoldings==='1';
   return <div className="shell"><SiteHeader/><main className="board current-board">
-    <h1>ประมาณอันดับ GE6 ปัจจุบัน</h1>
+    <div className="forecast-heading"><h1>世界はどこまで青空なのか？</h1><p>ทุกแรงสนับสนุน รวมเป็นเกราะป้องกันของ Nammonn BNK48</p></div>
     <RankingPanel includeHoldings={includeHoldings}>
       <Suspense fallback={<div className="loading-panel" role="status"><span className="spinner" aria-hidden="true"/>กำลังโหลดและคำนวณตารางอันดับ…</div>}>
         <RankingContent includeHoldings={includeHoldings}/>
@@ -28,6 +28,8 @@ async function RankingContent({includeHoldings}:{includeHoldings:boolean}){
   let data;
   try {data=await ge6CurrentRanking(includeHoldings);} catch(error) {console.error(error);}
   return !data?<p className="error" role="alert">ยังโหลดอันดับไม่ได้ กรุณาลองใหม่อีกครั้ง</p>:<>
+      {(()=>{const nammonn=data.rows.find((row:{name:string;amount:string})=>row.name==='Nammonn');const estimated=Number(nammonn?.amount??0);const remaining=Math.max(0,20000-estimated);return <section className="forecast-goal" aria-label="เป้าหมายคะแนน Nammonn"><div className="forecast-goal-label"><span aria-hidden="true">◎</span> Token รวมของ Nammonn BNK48 โดยประมาณ</div><div className="forecast-estimate">≈ {Math.round(estimated).toLocaleString('en-US')} <span>Token</span></div><div className="forecast-targets"><div><strong>20,000</strong><span>เป้าหมาย</span></div><div><strong>{Math.ceil(remaining).toLocaleString('en-US')}</strong><span>ขาดอีก</span></div></div></section>;})()}
+      <h2 className="forecast-list-title">ประมาณอันดับ GE6 ปัจจุบัน</h2>
       <div className="current-summary">
         <span>โหวตหลังผลด่วน <strong>{data.postVoteCount.toLocaleString('th-TH')}</strong> รายการ</span>
         <span>คาดการณ์ผู้รับได้ <strong>{displayShort(data.allocated)}</strong> GE6</span>
