@@ -17,7 +17,7 @@ export default function SiteHeader(){
   const pathname=usePathname();
   return <header className="site-header">
     <Link className="brand" href="/" aria-label="หน้าหลัก"><span className="sleeping-logo"><img src="/tofer-logo.webp" alt="" width="889" height="890" /></span><span className="brand-copy brand-name">คุณนักสืบโตเฟ่อ</span></Link>
-    <nav className="header-nav" aria-label="เมนูหลัก">{links.map(l=><Link key={l.href} href={l.href} prefetch={false} className={pathname===l.href?'active':undefined} aria-current={pathname===l.href?'page':undefined}><span className="nav-icon" aria-hidden="true"><NavIcon name={l.icon}/></span><span>{l.label}</span></Link>)}</nav>
+    <nav className="header-nav" aria-label="เมนูหลัก">{links.map(l=><a key={l.href} href={l.href} className={pathname===l.href?'active':undefined} aria-current={pathname===l.href?'page':undefined}><span className="nav-icon" aria-hidden="true"><NavIcon name={l.icon}/></span><span>{l.label}</span></a>)}</nav>
     <div className="header-right"><RefreshButton/><ThemeToggle/></div>
   </header>;
 }

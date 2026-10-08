@@ -53,7 +53,7 @@ export default function Home(){
   async function search(value:string,fresh=false){
     const address=value.trim().toLowerCase();if(!/^0x[0-9a-f]{40}$/.test(address)){setError('กรุณากรอก address ที่ขึ้นต้นด้วย 0x ให้ครบ 42 ตัวอักษร');return;}
     const id=++serial.current;setInput(address);setLoading(true);setError('');setData(null);setBalance(null);setBalanceError('');setEditing(false);setNotice('');setTab('history');
-    window.history.replaceState({},'',`/?address=${address}`);
+    window.history.replaceState(window.history.state,'',`/?address=${address}`);
     void loadBalance(address,id,fresh);
     try{const result=await cachedJson<Wallet>('/api/wallet/'+address,{fresh});if(serial.current===id)setData(result);}catch(e){if(serial.current===id)setError(e instanceof Error?e.message:'ค้นหาไม่สำเร็จ');}finally{if(serial.current===id)setLoading(false);}
   }
