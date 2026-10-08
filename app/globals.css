@@ -303,6 +303,18 @@ header{border-bottom-color:#ffffff80}
   .rank-stat-value{font-size:13px}
   .rank-held{font-size:10px}
 }
+
+/* Keep the forecast controls aligned with the goal card at every viewport. */
+.current-board .current-view-toggle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:min(100%,690px);box-sizing:border-box;margin:0 auto 14px}
+.current-board .current-view-toggle a{display:grid;place-items:center;min-width:0;text-align:center;line-height:1.35}
+.forecast-unassigned{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+.forecast-unassigned strong{color:var(--text);font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.forecast-unassigned small{font-size:12px;font-weight:400;color:var(--muted)}
+@media(max-width:520px){
+  .current-board .current-view-toggle a{padding:9px 4px;font-size:11px}
+  .forecast-unassigned{font-size:12px}
+  .forecast-unassigned strong{font-size:16px}
+}
 /* Wallet page GE6 votes on phones: keep the cards inside a scrollable box instead of spilling over the sections below. */
 @media(max-width:760px){.ge6-table.responsive-card-table{max-height:min(460px,62vh);overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}}
 /* Round member photos for "น่าจะโหวตใคร", first choice on the left. */
