@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import SiteHeader from '../site-header';
 import RankingPanel from './ranking-panel';
 import { ge6CurrentRanking } from '@/lib/ge6-current';
@@ -13,12 +14,20 @@ const tier=(rank:number)=>rank<=12?'senbatsu':rank<=24?'under':rank<=36?'next':'
 
 export default async function Page({searchParams}:{searchParams:Promise<{includeHoldings?:string}>}){
   const includeHoldings=(await searchParams).includeHoldings==='1';
-  let data;
-  try {data=await ge6CurrentRanking(includeHoldings);} catch(error) {console.error(error);}
   return <div className="shell"><SiteHeader/><main className="board current-board">
     <h1>ประมาณอันดับ GE6 ปัจจุบัน</h1>
     <RankingPanel includeHoldings={includeHoldings}>
-    {!data?<p className="error" role="alert">ยังโหลดอันดับไม่ได้ กรุณาลองใหม่อีกครั้ง</p>:<>
+      <Suspense fallback={<div className="loading-panel" role="status"><span className="spinner" aria-hidden="true"/>กำลังโหลดและคำนวณตารางอันดับ…</div>}>
+        <RankingContent includeHoldings={includeHoldings}/>
+      </Suspense>
+    </RankingPanel>
+  </main></div>;
+}
+
+async function RankingContent({includeHoldings}:{includeHoldings:boolean}){
+  let data;
+  try {data=await ge6CurrentRanking(includeHoldings);} catch(error) {console.error(error);}
+  return !data?<p className="error" role="alert">ยังโหลดอันดับไม่ได้ กรุณาลองใหม่อีกครั้ง</p>:<>
       <div className="current-summary">
         <span>โหวตหลังผลด่วน <strong>{data.postVoteCount.toLocaleString('th-TH')}</strong> รายการ</span>
         <span>คาดการณ์ผู้รับได้ <strong>{displayShort(data.allocated)}</strong> GE6</span>
@@ -41,7 +50,5 @@ export default async function Page({searchParams}:{searchParams:Promise<{include
       <p className="muted small current-footnote">ผลด่วนประกาศคะแนนรายคนเพียง 36 อันดับแรก อีก 22 คนใช้ยอดคงเหลือรวมเฉลี่ยเป็นฐานประมาณการ ช่วงอันดับคำนวณจากฐานที่ยังไม่เปิดเผย (0–1,724.28 GE6 ต่อคน) โดยยึดการแบ่งคะแนนตามสมมติฐานข้างต้น จึงไม่ใช่ผลคะแนนหรือขอบเขตอันดับจริง</p>
       {includeHoldings&&<p className="muted small">ยอดในวงเล็บคือ GE6 ที่ยังอยู่ในกระเป๋าผู้ถือ ณ เวลาที่โหลดข้อมูล กระจายตามรายชื่อที่คาดว่าจะโหวตด้วยสัดส่วนเดิม จึงเป็นเพียงสมมติฐานว่าเหรียญเหล่านั้นจะถูกนำไปโหวต</p>}
       <p className="muted small">ข้อมูลโหวตล่าสุด {data.lastVoteAt?date(data.lastVoteAt):'ยังไม่มีหลังผลด่วน'} · โหลดข้อมูลเมื่อ {date(data.fetchedAt)}</p>
-    </>}
-    </RankingPanel>
-  </main></div>;
+    </>;
 }

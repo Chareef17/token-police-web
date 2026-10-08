@@ -1,5 +1,6 @@
 'use client';
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { display } from '@/lib/amount.mjs';
 import SiteHeader from './site-header';
 import Ge6VotersTable from './ge6-voters-table';
@@ -11,6 +12,7 @@ type Balance={balances:{symbol:string;amount:string}[];fetchedAt:string};
 const date=(value?:string|null)=>value?new Date(value).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):'ยังไม่มีข้อมูล';
 function Icon({kind}:{kind:'search'|'shield'|'copy'|'external'|'wallet'}){return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{kind==='search'?<><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></>:kind==='shield'?<><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z"/><path d="m8 12 3 3 5-6"/></>:kind==='copy'?<><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></>:kind==='external'?<><path d="M14 3h7v7m0-7L10 14"/><path d="M10 3H3v18h18v-7"/></>:<><rect x="3" y="6" width="18" height="15" rx="3"/><path d="M3 8V5l14-3v4m4 6h-6v5h6"/></>}</svg>}
 export default function Home(){
+  const router=useRouter();
   const [input,setInput]=useState('');const [data,setData]=useState<Wallet|null>(null);const [balance,setBalance]=useState<Balance|null>(null);
   const [loading,setLoading]=useState(false);const [balanceLoading,setBalanceLoading]=useState(false);const [error,setError]=useState('');const [balanceError,setBalanceError]=useState('');
   const [editing,setEditing]=useState(false);const [name,setName]=useState('');const [saving,setSaving]=useState(false);const [notice,setNotice]=useState('');const [nameError,setNameError]=useState('');const [tab,setTab]=useState<'history'|'transactions'>('history');
@@ -25,7 +27,7 @@ export default function Home(){
     const timer=setTimeout(()=>{findNames(q).then(results=>{if(id===lookup.current){setSuggestions(results);setActive(-1);}}).catch(()=>{});},200);
     return ()=>clearTimeout(timer);
   },[input,isAddressInput]);
-  function pick(s:Suggestion){lookup.current++;setOpen(false);setSuggestions([]);if(s.kind==='member'){window.location.assign('/member/'+encodeURIComponent(s.name));return;}void search(s.address);}
+  function pick(s:Suggestion){lookup.current++;setOpen(false);setSuggestions([]);if(s.kind==='member'){router.push('/member/'+encodeURIComponent(s.name));return;}void search(s.address);}
   async function submit(){
     if(isAddressInput||!input.trim()){void search(input);return;}
     const q=input.trim();const id=++lookup.current;setOpen(false);

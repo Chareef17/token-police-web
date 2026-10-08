@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import SiteHeader from '../site-header';
 import { nammonnFans } from '@/lib/leaderboards';
 import { displayShort as display } from '@/lib/amount.mjs';
@@ -8,10 +9,15 @@ export const metadata:Metadata={title:'สายเปย์น้ำมนต�
 const short=(a:string)=>a.slice(0,8)+'…'+a.slice(-6);
 const date=(value:string|null)=>value?new Date(value).toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'}):'—';
 export default async function Nammonn(){
-  let fans;try{fans=await nammonnFans();}catch(error){console.error(error);}
   return <div className="shell"><SiteHeader/><main className="board voters-board fan-board">
     <h1>สายเปย์น้ำมนต์</h1>
     <p className="muted board-intro">กระเป๋าที่โหวตให้น้ำมนต์มากกว่าเมมเบอร์คนอื่นใน GE5 หรือ Thai-Japan 2026 เรียงตามยอดที่โหวตน้ำมนต์รวม</p>
+    <Suspense fallback={<div className="loading-panel" role="status"><span className="spinner" aria-hidden="true"/>กำลังโหลดข้อมูลสายเปย์น้ำมนต์…</div>}><NammonnContent/></Suspense>
+  </main></div>;
+}
+async function NammonnContent(){
+  let fans;try{fans=await nammonnFans();}catch(error){console.error(error);}
+  return <>
     {!fans?<p className="error" role="alert">ยังโหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง</p>:!fans.length?<p className="muted">ยังไม่มีข้อมูล</p>:<>
       <p className="muted small">ทั้งหมด {fans.length.toLocaleString()} กระเป๋า</p>
       <div className="table-wrap" tabIndex={0} aria-label="ตารางสายเปย์น้ำมนต์"><table>
@@ -28,5 +34,5 @@ export default async function Nammonn(){
         </tr>;})}</tbody>
       </table></div>
     </>}
-  </main></div>;
+  </>;
 }

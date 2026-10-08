@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { Suspense } from 'react';
 import SiteHeader from '@/app/site-header';
 import { ge6CandidateByName } from '@/lib/ge6-candidates';
 import { ge6MemberProjection } from '@/lib/ge6-current';
@@ -19,12 +21,19 @@ export default async function MemberPage({params,searchParams}:{params:Promise<{
   if(!name)notFound();
   const raw=(await searchParams).page;
   const page=raw&&/^[1-9]\d{0,5}$/.test(raw)?Number(raw):1;
+  return <div className="shell"><SiteHeader/><main className="board voters-board member-board">
+    <h1>{name} · ประมาณคะแนน GE6</h1>
+    <Suspense fallback={<div className="loading-panel" role="status"><span className="spinner" aria-hidden="true"/>กำลังโหลดคะแนนและกระเป๋าที่คาดว่าจะโหวต…</div>}>
+      <MemberContent name={name} page={page}/>
+    </Suspense>
+  </main></div>;
+}
+
+async function MemberContent({name,page}:{name:string;page:number}){
   let data;
   try{data=await ge6MemberProjection(name,page);}catch(error){console.error(error);}
   const base=`/member/${encodeURIComponent(name)}`;
-  return <div className="shell"><SiteHeader/><main className="board voters-board member-board">
-    <h1>{name} · ประมาณคะแนน GE6</h1>
-    {!data?<p className="error" role="alert">ยังโหลดข้อมูลเมมเบอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง</p>:<>
+  return !data?<p className="error" role="alert">ยังโหลดข้อมูลเมมเบอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง</p>:<>
       <div className="current-summary">
         <span>อันดับประมาณ <strong>#{data.rank}</strong></span>
         <span>{data.published?'ฐานผลด่วน':'ฐานผลด่วนประมาณ'} <strong>{displayShort(data.baseline)}</strong></span>
@@ -51,8 +60,7 @@ export default async function MemberPage({params,searchParams}:{params:Promise<{
           <td className="last-activity"><a href={href}>{date(wallet.lastTxAt)}</a></td>
         </tr>;})}</tbody>
       </table></div>
-      {data.pages>1&&<nav className="voters-pagination" aria-label="หน้ากระเป๋า"><span>หน้า {data.page}/{data.pages}</span><div>{data.page>1&&<a className="secondary" href={data.page===2?base:`${base}?page=${data.page-1}`}>ก่อนหน้า</a>}{data.page<data.pages&&<a className="secondary" href={`${base}?page=${data.page+1}`}>ถัดไป</a>}</div></nav>}
+      {data.pages>1&&<nav className="voters-pagination" aria-label="หน้ากระเป๋า"><span>หน้า {data.page}/{data.pages}</span><div>{data.page>1&&<Link className="secondary" prefetch={false} href={data.page===2?base:`${base}?page=${data.page-1}`}>ก่อนหน้า</Link>}{data.page<data.pages&&<Link className="secondary" prefetch={false} href={`${base}?page=${data.page+1}`}>ถัดไป</Link>}</div></nav>}
       <p className="muted small">GE6 ที่ยังถืออยู่เป็นเพียงสมมติฐานว่าจะนำไปโหวต · โหลดข้อมูลเมื่อ {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
-    </>}
-  </main></div>;
+    </>;
 }
