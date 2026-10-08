@@ -2,14 +2,19 @@ import { database } from './db';
 import { units, amount } from './amount.mjs';
 import { ge6CandidateByName, ge6CandidateNames } from './ge6-candidates';
 import { makeRanking, splitVote } from './ge6-current-model.mjs';
-import { ge6HeldBalances } from './ge6-held-balances';
+import { ge6HeldBalances, bnkHeldBalances } from './ge6-held-balances';
+
+// 'votes': votes cast since the preliminary result; 'ge6': plus GE6 still held by those wallets;
+// 'all': plus their BNK as well (counted 1:1).
+export type RankingMode='votes'|'ge6'|'all';
 import { voterDetails } from './ge6-voters';
 import preliminary from './ge6-prelim-2026-10-03.json';
 
 const events = ['GE5','Thai-Japan 2026','Thai-Chinese 2025'];
 const addressPattern = /^0x[0-9a-f]{40}$/;
 
-async function calculateRanking(includeHoldings=false) {
+async function calculateRanking(mode:RankingMode='votes') {
+  const includeHoldings=mode!=='votes';
   const heldPromise=includeHoldings?ge6HeldBalances():Promise.resolve(new Map<string,bigint>());
   const db = await database();
   const votes = (await db.execute({sql:'SELECT address,amount,voted_at FROM ge6_events WHERE julianday(voted_at)>julianday(?)',args:[preliminary.cutoff]})).rows;
@@ -24,6 +29,7 @@ async function calculateRanking(includeHoldings=false) {
   }
   const heldBalances=await heldPromise;
   const addresses = [...new Set([...wallets.keys(),...heldBalances.keys()])];
+  const bnkBalances=mode==='all'?await bnkHeldBalances(addresses):new Map<string,bigint>();
   const historical = new Map<string,Map<string,bigint>>();
   const manual = new Map<string,string[]>();
   // Keep each query below SQLite's bind-variable limit and fetch only wallets that voted after the cutoff.
@@ -61,6 +67,7 @@ async function calculateRanking(includeHoldings=false) {
   };
   let allocated=0n,unassigned=0n,manualWallets=0;
   let heldAllocated=0n,heldUnassigned=0n;
+  const bnkAdditions=new Map<string,bigint>();
   const choicesFor=(address:string)=>{
     const preferred=manual.get(address);
     return preferred??[...(historical.get(address)??new Map())]
@@ -80,19 +87,24 @@ async function calculateRanking(includeHoldings=false) {
     heldAllocated+=total;
     for(const [name,share] of splitVote(total,choices)){heldAdditions.set(name,(heldAdditions.get(name)??0n)+share);record(name,address,share,'held');}
   }
+  for(const [address,total] of bnkBalances){
+    const choices=choicesFor(address);
+    if(!choices.length)continue;
+    for(const [name,share] of splitVote(total,choices))bnkAdditions.set(name,(bnkAdditions.get(name)??0n)+share);
+  }
   const combined=new Map(additions);
-  for(const [name,share] of heldAdditions)combined.set(name,(combined.get(name)??0n)+share);
+  for(const extra of [heldAdditions,bnkAdditions])for(const [name,share] of extra)combined.set(name,(combined.get(name)??0n)+share);
   const votedRows=makeRanking([...ge6CandidateNames],preliminary.results as [string,string][],additions);
   const votedByName=new Map(votedRows.map((row:{name:string;amount:string})=>[row.name,row.amount]));
   const rows=makeRanking([...ge6CandidateNames],preliminary.results as [string,string][],combined)
-    .map((row:{name:string;amount:string})=>({...row,votedAmount:votedByName.get(row.name)!,heldAmount:amount(heldAdditions.get(row.name)??0n)}));
-  return {rows,includeHoldings,contributions,additions,heldAdditions,
+    .map((row:{name:string;amount:string})=>({...row,votedAmount:votedByName.get(row.name)!,heldAmount:amount(heldAdditions.get(row.name)??0n),bnkAmount:amount(bnkAdditions.get(row.name)??0n)}));
+  return {rows,mode,includeHoldings,contributions,additions,heldAdditions,
     cutoff:preliminary.cutoff,lastVoteAt,postVoteCount:votes.length,walletCount:wallets.size,manualWallets,
     allocated:amount(allocated),unassigned:amount(unassigned),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),fetchedAt:new Date().toISOString()};
 }
 
-export async function ge6CurrentRanking(includeHoldings=false){
-  const {contributions,additions,heldAdditions,...ranking}=await calculateRanking(includeHoldings);
+export async function ge6CurrentRanking(mode:RankingMode='votes'){
+  const {contributions,additions,heldAdditions,...ranking}=await calculateRanking(mode);
   return ranking;
 }
 
@@ -135,7 +147,7 @@ async function allMemberVoters(name:string){
 }
 
 export async function ge6MemberProjection(name:string,page=1){
-  const [result,contributions]=await Promise.all([calculateRanking(false),allMemberVoters(name)]);
+  const [result,contributions]=await Promise.all([calculateRanking('votes'),allMemberVoters(name)]);
   const ranked=result.rows.find((row:{name:string})=>row.name===name);
   if(!ranked)return null;
   const pageSize=20,pages=Math.max(1,Math.ceil(contributions.length/pageSize));

@@ -3,7 +3,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { display, displayShort } from '@/lib/amount.mjs';
 import SiteHeader from './site-header';
-import { cachedJson, forget } from '@/lib/client-cache';
+import { cachedJson, forget, refreshEvent } from '@/lib/client-cache';
 import AddressCopy from './address-copy';
 import Ge6VotersTable from './ge6-voters-table';
 import ManualPredictions,{type ManualPrediction} from './manual-predictions';
@@ -58,6 +58,7 @@ export default function Home(){
     try{const result=await cachedJson<Wallet>('/api/wallet/'+address,{fresh});if(serial.current===id)setData(result);}catch(e){if(serial.current===id)setError(e instanceof Error?e.message:'ค้นหาไม่สำเร็จ');}finally{if(serial.current===id)setLoading(false);}
   }
   useEffect(()=>{const value=new URLSearchParams(window.location.search).get('address');if(value)void search(value);},[]);
+  useEffect(()=>{const reload=()=>{const value=new URLSearchParams(window.location.search).get('address');if(value)void search(value,true);};window.addEventListener(refreshEvent,reload);return ()=>window.removeEventListener(refreshEvent,reload);},[]);
   async function saveName(event:FormEvent){event.preventDefault();if(!data)return;const id=serial.current;setSaving(true);setNameError('');try{const r=await fetch('/api/names',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:data.address,name,version:data.name?.version||0})});const result=await r.json();if(!r.ok)throw new Error(result.error);if(serial.current===id){forget('/api/wallet/'+data.address);setData({...data,name:result});setEditing(false);setNotice('บันทึกชื่อแล้ว ทุกคนจะเห็นชื่อนี้');}}catch(e){if(serial.current===id)setNameError(e instanceof Error?e.message:'บันทึกไม่สำเร็จ');}finally{setSaving(false);}}
   const stale=!!data && (data.ge6Status?.phase==='error'||!data.ge6Status?.lastSuccess||Date.now()-Date.parse(data.ge6Status.lastSuccess)>20*60000);
   return <div className="shell">

@@ -22,3 +22,9 @@ export async function cachedJson<T>(url:string,{fresh=false,signal}:{fresh?:bool
   return data as T;
 }
 export function forget(url:string){memory.delete(url);try{sessionStorage.removeItem(key(url));}catch{}}
+// Drops every cached answer (the header's refresh button); pages listening for 'app:refresh' refetch.
+export function forgetAll(){
+  memory.clear();
+  try{for(const name of Object.keys(sessionStorage))if(name.startsWith('api-cache:'))sessionStorage.removeItem(name);}catch{}
+}
+export const refreshEvent='app:refresh';

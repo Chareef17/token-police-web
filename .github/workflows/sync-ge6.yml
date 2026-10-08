@@ -25,3 +25,9 @@ jobs:
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      - name: BNK balances snapshot (every 30 minutes)
+        if: always()
+        run: if [ -z "$TURSO_DATABASE_URL" ]; then echo "TURSO_DATABASE_URL secret is not set"; else pnpm sync:bnk; fi
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}

@@ -3,7 +3,7 @@ import { useEffect,useState } from 'react';
 import { displayShort } from '@/lib/amount.mjs';
 import AddressCopy from './address-copy';
 import MemberAvatars from './member-avatars';
-import { cachedJson } from '@/lib/client-cache';
+import { cachedJson, refreshEvent } from '@/lib/client-cache';
 type Row={rank:number;address:string;name:string|null;voted:string;bnk:string|null;ge6:string|null;lastTxAt:string|null;likely:string[];topVote:string|null};
 type Board={rows:Row[];page:number;pages:number;total:number;fetchedAt:string};
 const date=(value:string|null)=>value?new Date(value).toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'}):'—';
@@ -20,8 +20,9 @@ export default function Ge6VotersTable(){
   const [error,setError]=useState('');
   useEffect(()=>{
     const restore=()=>setPage(pageFromUrl());
-    window.addEventListener('popstate',restore);
-    return ()=>window.removeEventListener('popstate',restore);
+    const reload=()=>setRetry(r=>r+1);
+    window.addEventListener('popstate',restore);window.addEventListener(refreshEvent,reload);
+    return ()=>{window.removeEventListener('popstate',restore);window.removeEventListener(refreshEvent,reload);};
   },[]);
   const changePage=(next:number)=>{
     const url=new URL(window.location.href);

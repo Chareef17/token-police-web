@@ -338,3 +338,21 @@ header{border-bottom-color:#ffffff80}
 a.member-avatar-item:hover{transform:translateY(-2px)}
 a.member-avatar-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .member-avatars.with-captions .member-avatar-item{border-radius:12px}
+/* Header refresh button: same glassy circle as the theme toggle, a little smaller. */
+.refresh-button{display:grid;place-items:center;width:36px;height:36px;padding:0;border-radius:50%;border:1px solid #ffffff80;background:#ffffff26;color:#fff;box-shadow:0 4px 14px #0b5f9a26;backdrop-filter:blur(6px);opacity:.85;transition:opacity .15s,background .15s}
+.refresh-button:hover{filter:none;opacity:1;background:#ffffff4d}
+.refresh-button.spinning svg{animation:refresh-spin .9s cubic-bezier(.4,.1,.3,1) infinite}
+@keyframes refresh-spin{to{transform:rotate(360deg)}}
+.site-header .header-right{gap:10px}
+[data-theme=dark] .refresh-button{background:#ffffff10;border-color:#ffffff33;color:#cfe3ff;box-shadow:0 4px 14px #00000059}
+[data-theme=dark] .refresh-button:hover{background:#ffffff22}
+@media(max-width:760px){.site-header .refresh-button{width:32px;height:32px}}
+/* Phones: room for avatar + full name next to the numbers. */
+@media(max-width:760px){
+  .rank-cards-head,.rank-card,.rank-card.rank-card-single{grid-template-columns:30px minmax(0,1fr) minmax(0,27%) minmax(0,22%)}
+  .rank-cards-head.rank-card-single,.rank-card.rank-card-single{grid-template-columns:30px minmax(0,1fr) minmax(0,34%)}
+  .rank-avatar{width:24px;height:24px;border-width:1.5px}
+  .rank-name,.rank-card .rank-name{gap:5px;font-size:14px;overflow-wrap:normal;word-break:keep-all}
+  .rank-stat-value{font-size:14px}
+}
+@media(max-width:360px){.rank-avatar{width:20px;height:20px}.rank-name,.rank-card .rank-name{font-size:12.5px;gap:4px}.rank-stat-value{font-size:12.5px}}

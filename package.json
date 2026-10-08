@@ -9,6 +9,7 @@
     "start": "next start --hostname 127.0.0.1",
     "sync": "node --env-file-if-exists=.env.local scripts/index-ge6.mjs",
     "sync:watch": "node --env-file-if-exists=.env.local scripts/index-ge6.mjs --watch",
+    "sync:bnk": "node --env-file-if-exists=.env.local scripts/sync-bnk.mjs",
     "upload-data": "node --env-file-if-exists=.env.local scripts/upload-data.mjs",
     "test": "node --test tests/*.test.mjs"
   },
