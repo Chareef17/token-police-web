@@ -303,3 +303,5 @@ header{border-bottom-color:#ffffff80}
   .rank-stat-value{font-size:13px}
   .rank-held{font-size:10px}
 }
+/* Wallet page GE6 votes on phones: keep the cards inside a scrollable box instead of spilling over the sections below. */
+@media(max-width:760px){.ge6-table.responsive-card-table{max-height:min(460px,62vh);overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}}
