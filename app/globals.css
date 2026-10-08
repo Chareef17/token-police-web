@@ -189,10 +189,15 @@ header{border-bottom-color:#ffffff80}
 .voter-holder-link{display:none}
 @media(max-width:760px){.voter-holder-link{display:inline-block;margin:0 0 16px}}
 
+.current-board .current-member-link,.current-board .current-member-link:hover{color:var(--text);text-decoration:none}.current-board .current-member-link:hover{color:var(--accent)}.nammonn-star{display:inline-block;margin-left:7px;color:#d99228;font-size:18px;line-height:1;vertical-align:middle}
+
 /* Compact mobile cards: identity first, then one readable line per value. */
 @media(max-width:760px){
   .responsive-card-table tbody tr:not(.mobile-tier-heading){grid-template-columns:42px minmax(0,1fr);gap:0 12px;padding:14px 16px}
   .responsive-card-table td.rank{grid-column:1;grid-row:1;width:38px;height:38px;border-radius:10px;font-size:16px}
+  .board .responsive-card-table tbody td.rank,.current-board .responsive-card-table tbody td.current-cell.rank{display:grid;place-items:center;align-content:center;justify-content:center;padding:0;text-align:center;line-height:1;width:38px;height:38px}
+  .responsive-card-table td.rank a{display:grid;place-items:center;width:100%;height:100%;font:inherit;color:inherit}
+  .current-board .responsive-card-table tbody tr td.rank{color:#fff}
   .responsive-card-table td.who{grid-column:2;grid-row:1;min-width:0;padding:0 0 9px}
   .responsive-card-table td.who strong{font-size:16px;line-height:1.3}
   .responsive-card-table td.who code{display:block;font-size:11px}

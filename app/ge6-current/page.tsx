@@ -38,7 +38,7 @@ async function RankingContent({includeHoldings}:{includeHoldings:boolean}){
           {[1,13,25,37].includes(row.rank)&&<tr className={`mobile-tier-heading tier-${tier(row.rank)}`}><th colSpan={includeHoldings?5:4}>{row.rank===1?'Senbatsu · 1–12':row.rank===13?'Under Girls · 13–24':row.rank===25?'Next Girls · 25–36':'ไม่ติดอันดับ · 37+'}</th></tr>}
           <tr className={`tier-${tier(row.rank)}`}>
           <td className="current-cell rank">{row.rank}</td>
-          <td className="current-cell who"><Link className="current-member-link" href={`/member/${encodeURIComponent(row.name)}`} prefetch={false}><strong>{row.name}</strong></Link></td>
+          <td className="current-cell who"><Link className="current-member-link" href={`/member/${encodeURIComponent(row.name)}`} prefetch={false}><strong>{row.name}</strong>{row.name==='Nammonn'&&<span className="nammonn-star" aria-hidden="true">★</span>}</Link></td>
           <td className="current-cell num" data-label="คาดจากโหวต"><strong>{displayShort(row.votedAmount)}</strong>{includeHoldings&&<span className="current-held"> (+{displayShort(row.heldAmount)})</span>}</td>
           {includeHoldings&&<td className="current-cell num" data-label="รวมที่ถือ"><strong>{displayShort(row.amount)}</strong></td>}
           <td className="current-cell num" data-label="ช่วงอันดับ">{row.bestRank===row.worstRank?row.bestRank:`${row.bestRank}–${row.worstRank}`}</td>
