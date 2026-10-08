@@ -2,6 +2,7 @@ import { database } from './db';
 import { amount, sum, units } from './amount.mjs';
 import { tokenxGet } from './tokenx-transport.mjs';
 import { voterDetails, type VoterDetails } from './ge6-voters';
+import { ge6Candidates } from './ge6-candidates';
 const GE6_TOKEN='0x2f5c60bde7a5ebd2b116bb03cb5232fa1ea55f1c';
 // Not fans: the GE6 voting contract, the treasury that received the whole mint, and every wallet the
 // treasury sent GE6 to directly (official distribution wallets), as traced on TokenX Scan in Oct 2026.
@@ -56,12 +57,36 @@ const fanList=()=>cached('fans',3600000,async()=>{
 });
 // Names are looked up on every request so newly set names show up immediately.
 export async function nammonnFans(){
-  const fans=await fanList();
+  const historicalFans=await fanList();
+  const existing=new Set(historicalFans.map(f=>f.address));
+  const db=await database();
+  const [voteRows,manualRows]=await db.batch([
+    {sql:'SELECT address,event,member,amount FROM votes WHERE event IN (?,?,?) AND address IS NOT NULL',args:['GE5','Thai-Japan 2026','Thai-Chinese 2025']},
+    'SELECT address,rank1 FROM manual_predictions WHERE rank1 IS NOT NULL',
+  ],'read');
+  const scores=new Map<string,Map<string,bigint>>();
+  for(const row of voteRows.rows){
+    const address=String(row.address).toLowerCase(),member=String(row.member).trim();
+    if(!/^0x[0-9a-f]{40}$/.test(address)||!ge6Candidates.has(member.toLowerCase()))continue;
+    const members=scores.get(address)??new Map<string,bigint>();scores.set(address,members);
+    members.set(member,(members.get(member)??0n)+units(String(row.amount))*(row.event==='Thai-Chinese 2025'?6n:68n));
+  }
+  const manual=new Map(manualRows.rows.map(row=>[String(row.address).toLowerCase(),String(row.rank1)]));
+  const candidates=new Set([...scores.keys(),...manual.keys()]);
+  const additional:FanBase[]=[];
+  for(const address of candidates){
+    if(existing.has(address)||officialWallets.has(address))continue;
+    const ranked=[...(scores.get(address)??new Map())].sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1);
+    if((manual.get(address)??ranked[0]?.[0])!=='Nammonn')continue;
+    additional.push({address,events:{},total:'0'});
+  }
+  additional.sort((a,b)=>{const left=scores.get(a.address)?.get('Nammonn')??0n,right=scores.get(b.address)?.get('Nammonn')??0n;return left===right?a.address.localeCompare(b.address):left>right?-1:1;});
+  const fans=[...historicalFans,...additional];
   if(!fans.length)return [] as Fan[];
   const addresses=fans.map(f=>f.address);
   const [details,ge6Rows]=await Promise.all([
     voterDetails(addresses),
-    (await database()).execute({sql:`SELECT address,amount FROM ge6_events WHERE address IN (${addresses.map(()=>'?').join(',')})`,args:addresses}),
+    db.execute({sql:`SELECT address,amount FROM ge6_events WHERE address IN (${addresses.map(()=>'?').join(',')})`,args:addresses}),
   ]);
   const voted=new Map<string,bigint>();
   for(const row of ge6Rows.rows){
