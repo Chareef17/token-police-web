@@ -243,7 +243,7 @@ header{border-bottom-color:#ffffff80}
 .rank-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:0 22px;padding:14px 26px 14px 14px;border-radius:22px;background:#fffffff0;border:1px solid #ffffffcc;box-shadow:0 8px 24px #1f7fc214;color:var(--text);text-decoration:none;transition:transform .12s,box-shadow .12s}
 .rank-card:hover{transform:translateY(-1px);box-shadow:0 12px 28px #1f7fc226}
 .rank-badge{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--badge);color:#fff;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
-.rank-name{font-size:clamp(18px,2.2vw,22px);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-name{font-size:clamp(18px,2.2vw,22px);font-weight:600;min-width:0;overflow-wrap:anywhere}
 .rank-stat{display:flex;flex-direction:column;padding-left:22px;border-left:1px solid var(--line);min-width:0}
 .rank-stat-label{font-size:13px;color:var(--muted)}
 .rank-stat-value{font-size:clamp(17px,2.2vw,22px);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -260,7 +260,7 @@ header{border-bottom-color:#ffffff80}
   .rank-stat-label{font-size:11px}
   .rank-held{display:block;margin-left:0;font-size:12px}
 }
-@media(max-width:400px){
+@media(max-width:520px){
   .rank-card{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:'badge name name' 'badge vote total'}
   .rank-badge{grid-area:badge}.rank-name{grid-area:name;margin-bottom:4px}
   .rank-name+.rank-stat{grid-area:vote;padding-left:0;border-left:0}
@@ -269,4 +269,4 @@ header{border-bottom-color:#ffffff80}
 /* Fixed stat columns so the dividers line up from card to card. */
 .rank-card{grid-template-columns:auto minmax(0,1fr) minmax(0,32%) minmax(0,24%)}
 @media(max-width:760px){.rank-card{grid-template-columns:auto minmax(0,1fr) minmax(0,34%) minmax(0,29%)}}
-@media(max-width:400px){.rank-card{grid-template-columns:auto minmax(0,1fr) minmax(0,46%)}}
+@media(max-width:520px){.rank-card{grid-template-columns:auto minmax(0,1fr) minmax(0,46%)}}
