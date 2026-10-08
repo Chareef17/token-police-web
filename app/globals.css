@@ -191,6 +191,8 @@ header{border-bottom-color:#ffffff80}
 
 .current-board .current-member-link,.current-board .current-member-link:hover{color:var(--text);text-decoration:none}.current-board .current-member-link:hover{color:var(--accent)}.nammonn-star{display:inline-block;margin-left:7px;color:#d99228;font-size:18px;line-height:1;vertical-align:middle}
 
+.wallet-identity{display:flex;flex-direction:column;align-items:flex-start;min-width:0}.address-copy{display:inline-flex;align-items:center;gap:4px;max-width:100%;min-width:0;vertical-align:middle}.address-copy code{font:12px monospace;color:var(--muted);overflow-wrap:anywhere}.address-copy-link{min-width:0;overflow-wrap:anywhere}.address-copy-link:hover code{color:var(--accent)}.address-copy-button{display:grid;place-items:center;flex:0 0 25px;width:25px;height:25px;padding:4px;border:0;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}.address-copy-button:hover{background:#dceefa;color:var(--accent)}.address-copy-button svg{display:block;width:15px;height:15px}.address-row .address-copy code{font-size:13px}.suggestion-address .address-copy code{font-size:12px}.voter-card-identity .address-copy code{font-size:12px}.admin .address-copy code{font-size:12px;color:var(--accent)}[data-theme=dark] .address-copy-button:hover{background:#24415f}
+
 /* Compact mobile cards: identity first, then one readable line per value. */
 @media(max-width:760px){
   .responsive-card-table tbody tr:not(.mobile-tier-heading){grid-template-columns:42px minmax(0,1fr);gap:0 12px;padding:14px 16px}

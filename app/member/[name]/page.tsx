@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import SiteHeader from '@/app/site-header';
+import AddressCopy from '@/app/address-copy';
 import { ge6CandidateByName } from '@/lib/ge6-candidates';
 import { ge6MemberProjection } from '@/lib/ge6-current';
 import { displayShort } from '@/lib/amount.mjs';
@@ -13,7 +14,6 @@ export async function generateMetadata({params}:{params:Promise<{name:string}>})
   const name=ge6CandidateByName.get((await params).name.toLowerCase());
   return {title:`${name??'เมมเบอร์'} — คุณนักสืบโตเฟ่อ`};
 }
-const short=(address:string)=>address.slice(0,8)+'…'+address.slice(-6);
 const date=(value:string|null)=>value?new Date(value).toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'}):'—';
 
 export default async function MemberPage({params,searchParams}:{params:Promise<{name:string}>;searchParams:Promise<{page?:string}>}){
@@ -46,7 +46,7 @@ async function MemberContent({name,page}:{name:string;page:number}){
         <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดว่าโหวตให้ {name}</th><th className="num">GE6 โหวตแล้วทั้งกระเป๋า</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.wallets.map((wallet,index)=>{const href='/?address='+wallet.address;return <tr key={wallet.address}>
           <td className="rank"><a href={href}>{(data.page-1)*20+index+1}</a></td>
-          <td className="who"><a href={href}>{wallet.name&&<strong>{wallet.name}</strong>}<code>{short(wallet.address)}</code></a></td>
+          <td className="who"><div className="wallet-identity">{wallet.name&&<a href={href}><strong>{wallet.name}</strong></a>}<AddressCopy address={wallet.address} href={href}/></div></td>
           <td className="num" data-label={`คาดให้ ${name}`}><a href={href}>{displayShort(wallet.contributionVotes)}</a></td>
           <td className="num" data-label="GE6 โหวตแล้ว"><a href={href}>{displayShort(wallet.voted)}</a></td>
           <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร"><a href={href}>{wallet.likely.length?wallet.likely.map((candidate,i)=><span className="candidate" key={candidate}>{i+1}. {candidate}</span>):'—'}</a></td>
