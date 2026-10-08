@@ -2,6 +2,7 @@
 import { useEffect,useState } from 'react';
 import { displayShort } from '@/lib/amount.mjs';
 import AddressCopy from './address-copy';
+import MemberAvatars from './member-avatars';
 type Row={rank:number;address:string;name:string|null;voted:string;bnk:string|null;ge6:string|null;lastTxAt:string|null;likely:string[];topVote:string|null};
 type Board={rows:Row[];page:number;pages:number;total:number;fetchedAt:string};
 const date=(value:string|null)=>value?new Date(value).toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'}):'—';
@@ -48,7 +49,7 @@ export default function Ge6VotersTable(){
           <td className="num" data-label="GE6 โหวตแล้ว"><a href={href}><strong>{displayShort(row.voted)}</strong></a></td>
           <td className="num" data-label="GE6 ถืออยู่"><a href={href}>{row.ge6===null?'—':displayShort(row.ge6)}</a></td>
           <td className="num" data-label="BNK ถืออยู่"><a href={href}>{row.bnk===null?'—':displayShort(row.bnk)}</a></td>
-          <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร"><a href={href}>{row.likely.length?row.likely.map((candidate,index)=><span className="candidate" key={candidate}>{index+1}. {candidate}</span>):'—'}</a></td>
+          <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร"><a href={href}>{row.likely.length?<MemberAvatars names={row.likely}/>:'—'}</a></td>
           <td className="vote-hint" data-label="เคยโหวตมากสุด"><a href={href}>{row.topVote??'—'}</a></td>
           <td className="last-activity" data-label="ล่าสุด"><a href={href}>{date(row.lastTxAt)}</a></td>
         </tr>;})}</tbody>

@@ -305,3 +305,13 @@ header{border-bottom-color:#ffffff80}
 }
 /* Wallet page GE6 votes on phones: keep the cards inside a scrollable box instead of spilling over the sections below. */
 @media(max-width:760px){.ge6-table.responsive-card-table{max-height:min(460px,62vh);overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}}
+/* Round member photos for "น่าจะโหวตใคร", first choice on the left. */
+.member-avatars{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
+.member-avatar-item{display:inline-flex}
+.member-avatars img,.member-avatar-fallback{display:block;width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #fff;box-shadow:0 2px 6px #1f7fc22e;background:#dceefa}
+.member-avatar-fallback{display:grid;place-items:center;font-size:13px;font-weight:600;color:var(--accent)}
+.member-avatars.with-captions{gap:16px;flex-wrap:wrap;margin-top:6px}
+.member-avatars.with-captions .member-avatar-item{flex-direction:column;align-items:center;gap:4px;font-size:13px;font-weight:500}
+.member-avatars.with-captions img,.member-avatars.with-captions .member-avatar-fallback{width:56px;height:56px}
+[data-theme=dark] .member-avatars img,[data-theme=dark] .member-avatar-fallback{border-color:#cfe3ff;background:#1b3150}
+@media(max-width:760px){.member-avatars img,.member-avatar-fallback{width:28px;height:28px}.member-avatars{gap:4px}}

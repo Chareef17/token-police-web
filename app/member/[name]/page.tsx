@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import SiteHeader from '@/app/site-header';
 import AddressCopy from '@/app/address-copy';
+import MemberAvatars from '@/app/member-avatars';
 import { ge6CandidateByName } from '@/lib/ge6-candidates';
 import { ge6MemberProjection } from '@/lib/ge6-current';
 import { displayShort } from '@/lib/amount.mjs';
@@ -49,7 +50,7 @@ async function MemberContent({name,page}:{name:string;page:number}){
           <td className="who"><div className="wallet-identity">{wallet.name&&<a href={href}><strong>{wallet.name}</strong></a>}<AddressCopy address={wallet.address} href={href}/></div></td>
           <td className="num" data-label={`คาดให้ ${name}`}><a href={href}>{displayShort(wallet.contributionVotes)}</a></td>
           <td className="num" data-label="GE6 โหวตแล้ว"><a href={href}>{displayShort(wallet.voted)}</a></td>
-          <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร"><a href={href}>{wallet.likely.length?wallet.likely.map((candidate,i)=><span className="candidate" key={candidate}>{i+1}. {candidate}</span>):'—'}</a></td>
+          <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร"><a href={href}>{wallet.likely.length?<MemberAvatars names={wallet.likely}/>:'—'}</a></td>
           <td className="vote-hint" data-label="เคยโหวตมากสุด"><a href={href}>{wallet.topVote??'—'}</a></td>
           <td className="last-activity" data-label="ล่าสุด"><a href={href}>{date(wallet.lastTxAt)}</a></td>
         </tr>;})}</tbody>

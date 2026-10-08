@@ -1,6 +1,7 @@
 'use client';
 import { FormEvent,KeyboardEvent,useState } from 'react';
 import { ge6CandidateNames } from '@/lib/ge6-candidates';
+import MemberAvatars from './member-avatars';
 export type ManualPrediction={members:string[];version:number;updated_at:string};
 type Choice=string|null;
 
@@ -59,7 +60,7 @@ export default function ManualPredictions({address,initial,onSaved}:{address:str
     <div className="manual-heading"><div><h2 className="section-title">น่าจะโหวตใคร</h2></div>
       {!editing&&<button className="secondary" type="button" onClick={start}>{initial?.members.length?'แก้ไขลำดับ':'เพิ่มลำดับ'}</button>}
     </div>
-    {!editing&&<>{initial?.members.length?<ol className="manual-list">{initial.members.map(member=><li key={member}>{member}</li>)}</ol>:<p className="muted small">ยังไม่ได้ตั้งลำดับเอง</p>}</>}
+    {!editing&&<>{initial?.members.length?<MemberAvatars names={initial.members} captions/>:<p className="muted small">ยังไม่ได้ตั้งลำดับเอง</p>}</>}
     {editing&&<form onSubmit={submit} className="manual-form">
       <div className="manual-fields">{Array.from({length:visibleCount},(_,index)=>{
         const options=choices(index),open=openIndex===index&&options.length>0;
