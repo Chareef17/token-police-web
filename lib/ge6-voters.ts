@@ -64,7 +64,7 @@ export async function ge6Voters(page=1){
     for(const row of nameRows.rows)names.set(String(row.address).toLowerCase(),String(row.name));
     for(const row of manualRows.rows){
       const members=[row.rank1,row.rank2,row.rank3].filter(v=>v!=null).map(String);
-      if(members.length===3)manual.set(String(row.address).toLowerCase(),members);
+      if(members.length>0)manual.set(String(row.address).toLowerCase(),members);
     }
     const overall=new Map<string,Map<string,bigint>>();
     const likelyTotals=new Map<string,Map<string,bigint>>();

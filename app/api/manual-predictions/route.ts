@@ -18,7 +18,7 @@ export async function POST(request:Request){
     address=addressOf(input.address);
     version=input.version;
     if(!Number.isSafeInteger(version)||version<0)throw new Error('Version ไม่ถูกต้อง');
-    if(!Array.isArray(input.members)||![0,3].includes(input.members.length))throw new Error('กรุณาเลือกผู้สมัคร 3 คน หรือเคลียร์รายการ');
+    if(!Array.isArray(input.members)||input.members.length>3)throw new Error('กรุณาเลือกผู้สมัครไม่เกิน 3 คน');
     members=input.members.map((value:unknown)=>{
       if(typeof value!=='string')throw new Error('ชื่อเมมเบอร์ไม่ถูกต้อง');
       const canonical=ge6CandidateByName.get(value.trim().toLowerCase());
