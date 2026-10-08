@@ -208,6 +208,8 @@ header{border-bottom-color:#ffffff80}
   .responsive-card-table td.num a{font-size:14px}
   .responsive-card-table td.vote-hint,.responsive-card-table td.last-activity{font-size:12px}
   .responsive-card-table td.vote-hint a,.responsive-card-table td.last-activity a{font-size:12px}
+  .responsive-card-table td.vote-hint[data-label="น่าจะโหวตใคร"]>a{display:block;min-width:0;margin-left:auto;text-align:right}
+  .responsive-card-table td.vote-hint[data-label="น่าจะโหวตใคร"] .candidate{display:block;margin:0}
   .forecast-rank-table tbody tr:not(.mobile-tier-heading){padding:12px 15px}
   .forecast-rank-table td.who{padding-bottom:7px}
   .forecast-rank-table td.num,.forecast-rank-table td.num:last-child{font-size:15px}
