@@ -26,7 +26,7 @@ async function loadHolders(){
     let result:HolderPage|undefined;
     // This explorer occasionally serves the preceding page for a fresh cursor.
     for(let attempt=0;attempt<5;attempt++){
-      if(page||attempt)await pause(800);
+      if(page||attempt)await pause(attempt?800:300);
       const candidate=await readPage(cursor);
       const first=candidate.items?.[0]?.address?.hash?.toLowerCase();
       if(candidate.items?.length&&first!==previousLast&&first&&!seen.has(first)){result=candidate;break;}

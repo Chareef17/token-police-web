@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import SiteHeader from '../site-header';
 import RankingPanel from './ranking-panel';
 import { ge6CurrentRanking } from '@/lib/ge6-current';
@@ -31,7 +32,7 @@ export default async function Page({searchParams}:{searchParams:Promise<{include
         <thead><tr><th>ลำดับ</th><th>ชื่อ</th><th className="num">{includeHoldings?'จำนวน (+ในกระเป๋า)':'จำนวน (ประมาณ)'}</th>{includeHoldings&&<th className="num">ทั้งหมด</th>}<th className="num">ช่วงอันดับที่เป็นไปได้</th></tr></thead>
         <tbody>{data.rows.map((row:{name:string;rank:number;amount:string;votedAmount:string;heldAmount:string;bestRank:number;worstRank:number})=><tr key={row.name} className={`tier-${tier(row.rank)}`}>
           <td className="current-cell rank">{row.rank}</td>
-          <td className="current-cell who"><a className="current-member-link" href={`/member/${encodeURIComponent(row.name)}`}><strong>{row.name}</strong></a></td>
+          <td className="current-cell who"><Link className="current-member-link" href={`/member/${encodeURIComponent(row.name)}`} prefetch={false}><strong>{row.name}</strong></Link></td>
           <td className="current-cell num"><strong>{displayShort(row.votedAmount)}</strong>{includeHoldings&&<span className="current-held"> (+{displayShort(row.heldAmount)})</span>}</td>
           {includeHoldings&&<td className="current-cell num"><strong>{displayShort(row.amount)}</strong></td>}
           <td className="current-cell num">{row.bestRank===row.worstRank?row.bestRank:`${row.bestRank}–${row.worstRank}`}</td>
