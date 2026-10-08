@@ -39,7 +39,7 @@ export default function Ge6VotersTable(){
         </tr>;})}</tbody>
       </table></div>
       <div className="voters-pagination"><span>ทั้งหมด {data.total.toLocaleString()} กระเป๋า · หน้า {data.page}/{data.pages}</span><div><button className="secondary" disabled={page<=1} onClick={()=>setPage(p=>p-1)}>ก่อนหน้า</button><button className="secondary" disabled={page>=data.pages} onClick={()=>setPage(p=>p+1)}>ถัดไป</button></div></div>
-      <p className="muted small">น่าจะโหวตใคร: รวมยอดแต่ละเมมเบอร์จากประวัติโหวตงานเก่า · Member top vote: ยอดสูงสุดในงานเดียวจาก GE4, GE5, Thai-Japan และ Thai-Chinese · ยอดคงเหลือและธุรกรรมล่าสุดจาก TokenX Scan · อัปเดต {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
+      <p className="muted small">น่าจะโหวตใคร: รวมยอดจากงานเก่าและกรองเฉพาะผู้สมัคร GE6 · Member top vote: ยอดสูงสุดในงานเดียวจาก GE4, GE5, Thai-Japan, Thai-Chinese และ 365-Nichi · ยอดคงเหลือและธุรกรรมล่าสุดจาก TokenX Scan · อัปเดต {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
     </>}
   </section>;
 }

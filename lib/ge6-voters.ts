@@ -2,9 +2,10 @@ import { database } from './db';
 import { amount, units } from './amount.mjs';
 import { balances } from './balances';
 import { tokenxGet } from './tokenx-transport.mjs';
+import { ge6Candidates } from './ge6-candidates';
 
 const PAGE_SIZE=20;
-const topVoteEvents=new Set(['GE4','GE5','Thai-Japan 2026','Thai-Chinese 2025']);
+const topVoteEvents=new Set(['GE4','GE5','Thai-Japan 2026','Thai-Chinese 2025','365-Nichi 2024']);
 type Ranked={address:string;voted:string;rank:number};
 type Activity={date:string|null};
 type Candidate={member:string;amount:string};
@@ -64,8 +65,10 @@ export async function ge6Voters(page=1){
       const address=String(row.address).toLowerCase(),event=String(row.event),member=String(row.member).trim();
       if(!member||member==='Unknown')continue;
       const value=units(String(row.amount));
-      const members=overall.get(address)??new Map<string,bigint>();overall.set(address,members);
-      members.set(member,(members.get(member)??0n)+value);
+      if(ge6Candidates.has(member.toLowerCase())){
+        const members=overall.get(address)??new Map<string,bigint>();overall.set(address,members);
+        members.set(member,(members.get(member)??0n)+value);
+      }
       if(topVoteEvents.has(event)){
         const key=address+'|'+event;
         const eventMembers=byEvent.get(key)??new Map<string,bigint>();byEvent.set(key,eventMembers);
