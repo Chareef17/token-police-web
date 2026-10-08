@@ -28,7 +28,7 @@ async function NammonnContent(){
           <td className="num" data-label="GE6 โหวตแล้ว"><a href={href}><strong>{display(f.voted)}</strong></a></td>
           <td className="num" data-label="GE6 ถืออยู่"><a href={href}>{f.ge6===null?'—':display(f.ge6)}</a></td>
           <td className="num" data-label="BNK ถืออยู่"><a href={href}>{f.bnk===null?'—':display(f.bnk)}</a></td>
-          <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร"><a href={href}>{f.likely.length?<MemberAvatars names={f.likely}/>:'—'}</a></td>
+          <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร">{f.likely.length?<MemberAvatars names={f.likely}/>:<a href={href}>—</a>}</td>
           <td className="vote-hint" data-label="เคยโหวตมากสุด"><a href={href}>{f.topVote??'—'}</a></td>
           <td className="last-activity" data-label="ล่าสุด"><a href={href}>{date(f.lastTxAt)}</a></td>
         </tr>;})}</tbody>

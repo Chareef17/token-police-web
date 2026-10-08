@@ -11,4 +11,6 @@ export const ge6CandidateNames=[
   'Shenae','Tara','Valentine',
 ] as const;
 export const ge6Candidates=new Set(ge6CandidateNames.map(name=>name.toLowerCase()));
+// The first 37 names are BNK48 members, the rest CGM48.
+export const ge6CandidateGroup=(name:string)=>ge6CandidateNames.indexOf(name as typeof ge6CandidateNames[number])<37?'BNK48':'CGM48';
 export const ge6CandidateByName=new Map(ge6CandidateNames.map(name=>[name.toLowerCase(),name]));

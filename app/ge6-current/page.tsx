@@ -37,7 +37,7 @@ async function RankingContent({includeHoldings}:{includeHoldings:boolean}){
         <ol className="rank-cards">{rows.map((row:Row)=><li key={row.name}>
           <Link className={includeHoldings?"rank-card":"rank-card rank-card-single"} href={`/member/${encodeURIComponent(row.name)}`} prefetch={false}>
             <span className="rank-badge">{row.rank}</span>
-            <span className="rank-name">{row.name}{row.name==='Nammonn'&&<span className="nammonn-star" aria-hidden="true">★</span>}</span>
+            <span className="rank-name"><img className="rank-avatar" src={`/members/${row.name.toLowerCase()}.webp`} alt="" width={64} height={64} loading="lazy" decoding="async"/>{row.name}{row.name==='Nammonn'&&<span className="nammonn-star" aria-hidden="true">★</span>}</span>
             <span className="rank-stat"><span className="rank-stat-label">คาดจากโหวต</span><span className="rank-stat-value"><strong>{displayShort(row.votedAmount)}</strong>{includeHoldings&&<span className="rank-held">(+{displayShort(row.heldAmount)})</span>}</span></span>
             {includeHoldings&&<span className="rank-stat"><span className="rank-stat-label">รวมที่ถือ</span><strong className="rank-stat-value">{displayShort(row.amount)}</strong></span>}
           </Link>
