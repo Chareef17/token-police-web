@@ -97,12 +97,13 @@ export async function ge6CurrentRanking(includeHoldings=false){
 }
 
 export async function ge6MemberProjection(name:string,page=1){
-  const result=await calculateRanking(true);
+  const result=await calculateRanking(false);
   const ranked=result.rows.find((row:{name:string})=>row.name===name);
   if(!ranked)return null;
   const contributions=[...(result.contributions.get(name)??new Map())]
-    .map(([address,values])=>({address,...values,total:values.votes+values.held}))
-    .sort((a,b)=>a.total===b.total?a.address.localeCompare(b.address):a.total>b.total?-1:1);
+    .filter(([,values])=>values.votes>0n)
+    .map(([address,values])=>({address,votes:values.votes}))
+    .sort((a,b)=>a.votes===b.votes?a.address.localeCompare(b.address):a.votes>b.votes?-1:1);
   const pageSize=20,pages=Math.max(1,Math.ceil(contributions.length/pageSize));
   const current=Math.min(Math.max(1,page),pages);
   const slice=contributions.slice((current-1)*pageSize,current*pageSize);
@@ -116,11 +117,12 @@ export async function ge6MemberProjection(name:string,page=1){
     const address=String(row.address).toLowerCase();
     walletVotes.set(address,(walletVotes.get(address)??0n)+units(String(row.amount)));
   }
-  return {name,rank:ranked.rank,published:ranked.published,
+  const preliminaryEntry=(preliminary.results as [string,string][]).findIndex(([candidate])=>candidate===name);
+  return {name,preliminaryRank:preliminaryEntry>=0?preliminaryEntry+1:null,published:ranked.published,
     baseline:amount(units(ranked.votedAmount)-(result.additions.get(name)??0n)),
-    postVotes:amount(result.additions.get(name)??0n),held:amount(result.heldAdditions.get(name)??0n),total:ranked.amount,
+    postVotes:amount(result.additions.get(name)??0n),total:ranked.votedAmount,
     wallets:slice.map(item=>({address:item.address,name:details.get(item.address)?.name??null,
-      contributionVotes:amount(item.votes),contributionHeld:amount(item.held),contributionTotal:amount(item.total),
+      contributionVotes:amount(item.votes),
       voted:amount(walletVotes.get(item.address)??0n),ge6:details.get(item.address)?.ge6??null,bnk:details.get(item.address)?.bnk??null,
       likely:details.get(item.address)?.likely??[],topVote:details.get(item.address)?.topVote??null,lastTxAt:details.get(item.address)?.lastTxAt??null})),
     page:current,pages,walletCount:contributions.length,fetchedAt:result.fetchedAt};

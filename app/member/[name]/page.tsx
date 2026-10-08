@@ -23,7 +23,7 @@ export default async function MemberPage({params,searchParams}:{params:Promise<{
   const page=raw&&/^[1-9]\d{0,5}$/.test(raw)?Number(raw):1;
   return <div className="shell"><SiteHeader/><main className="board voters-board member-board">
     <h1>{name} · ประมาณคะแนน GE6</h1>
-    <Suspense fallback={<div className="loading-panel" role="status"><span className="spinner" aria-hidden="true"/>กำลังโหลดคะแนนและกระเป๋าที่คาดว่าจะโหวต…</div>}>
+    <Suspense fallback={<div className="loading-panel" role="status"><span className="spinner" aria-hidden="true"/>กำลังโหลดคะแนนโหวตและกระเป๋าที่เกี่ยวข้อง…</div>}>
       <MemberContent name={name} page={page}/>
     </Suspense>
   </main></div>;
@@ -35,32 +35,27 @@ async function MemberContent({name,page}:{name:string;page:number}){
   const base=`/member/${encodeURIComponent(name)}`;
   return !data?<p className="error" role="alert">ยังโหลดข้อมูลเมมเบอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง</p>:<>
       <div className="current-summary">
-        <span>อันดับประมาณ <strong>#{data.rank}</strong></span>
-        <span>{data.published?'ฐานผลด่วน':'ฐานผลด่วนประมาณ'} <strong>{displayShort(data.baseline)}</strong></span>
+        <span>อันดับผลด่วน <strong>{data.preliminaryRank===null?'ไม่อยู่ใน 36 อันดับที่ประกาศ':`#${data.preliminaryRank}`}</strong></span>
+        <span>คะแนนผลด่วน <strong>{data.published?displayShort(data.baseline):'ไม่เปิดเผย'}</strong></span>
         <span>คาดจากโหวตหลังผลด่วน <strong>{displayShort(data.postVotes)}</strong></span>
-        <span>คาดจาก GE6 ในกระเป๋า <strong>{displayShort(data.held)}</strong></span>
-        <span>ทั้งหมดประมาณ <strong>{displayShort(data.total)}</strong> GE6</span>
+        <span>รวมตามตารางอันดับปัจจุบัน <strong>{displayShort(data.total)}</strong> GE6</span>
       </div>
-      <p className="muted small">โหวต GE6 เป็นโหวตลับ คะแนนฐานจากผลด่วนจึงแจกแจงตามกระเป๋าไม่ได้ ตารางนี้แสดงเฉพาะส่วนที่คาดจากโหวตหลังผลด่วนและ GE6 ที่ยังถืออยู่ โดยใช้รายชื่อที่กรอกเองก่อนประวัติโหวต</p>
-      <h2>กระเป๋าที่คาดว่าจะโหวต {name}</h2>
-      <p className="muted small">ทั้งหมด {data.walletCount.toLocaleString()} กระเป๋า · เรียงตามยอดที่คาดให้เมมเบอร์</p>
-      <div className="table-wrap" tabIndex={0} aria-label={`กระเป๋าที่คาดว่าจะโหวต ${name}`}><table>
-        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดจากโหวต</th><th className="num">คาดจากที่ถือ</th><th className="num">รวมที่คาดให้ {name}</th><th className="num">GE6 โหวตแล้ว</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
+      <p className="muted small">GE6 เป็นโหวตลับ จึงระบุกระเป๋าที่สร้างคะแนนผลด่วนไม่ได้ รายการด้านล่างแจกแจงเฉพาะยอดโหวตหลังผลด่วนที่คาดว่าเป็นของ {name} โดยใช้รายชื่อที่กรอกเองก่อนประวัติโหวต ไม่รวม GE6 ที่ยังถืออยู่ในกระเป๋า</p>
+      <h2>กระเป๋าที่คาดว่าโหวตให้ {name}</h2>
+      <p className="muted small">ทั้งหมด {data.walletCount.toLocaleString()} กระเป๋า · เรียงตามยอดโหวตที่คาดให้เมมเบอร์</p>
+      <div className="table-wrap" tabIndex={0} aria-label={`กระเป๋าที่คาดว่าโหวตให้ ${name}`}><table>
+        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดว่าโหวตให้ {name}</th><th className="num">GE6 โหวตแล้วทั้งกระเป๋า</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.wallets.map((wallet,index)=>{const href='/?address='+wallet.address;return <tr key={wallet.address}>
           <td className="rank"><a href={href}>{(data.page-1)*20+index+1}</a></td>
           <td className="who"><a href={href}>{wallet.name&&<strong>{wallet.name}</strong>}<code>{short(wallet.address)}</code></a></td>
           <td className="num"><a href={href}>{displayShort(wallet.contributionVotes)}</a></td>
-          <td className="num"><a href={href}>{displayShort(wallet.contributionHeld)}</a></td>
-          <td className="num"><a href={href}><strong>{displayShort(wallet.contributionTotal)}</strong></a></td>
           <td className="num"><a href={href}>{displayShort(wallet.voted)}</a></td>
-          <td className="num"><a href={href}>{wallet.ge6===null?'—':displayShort(wallet.ge6)}</a></td>
-          <td className="num"><a href={href}>{wallet.bnk===null?'—':displayShort(wallet.bnk)}</a></td>
           <td className="vote-hint vote-hint-first"><a href={href}>{wallet.likely.length?wallet.likely.map((candidate,i)=><span className="candidate" key={candidate}>{i+1}. {candidate}</span>):'—'}</a></td>
           <td className="vote-hint"><a href={href}>{wallet.topVote??'—'}</a></td>
           <td className="last-activity"><a href={href}>{date(wallet.lastTxAt)}</a></td>
         </tr>;})}</tbody>
       </table></div>
       {data.pages>1&&<nav className="voters-pagination" aria-label="หน้ากระเป๋า"><span>หน้า {data.page}/{data.pages}</span><div>{data.page>1&&<Link className="secondary" prefetch={false} href={data.page===2?base:`${base}?page=${data.page-1}`}>ก่อนหน้า</Link>}{data.page<data.pages&&<Link className="secondary" prefetch={false} href={`${base}?page=${data.page+1}`}>ถัดไป</Link>}</div></nav>}
-      <p className="muted small">GE6 ที่ยังถืออยู่เป็นเพียงสมมติฐานว่าจะนำไปโหวต · โหลดข้อมูลเมื่อ {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
+      <p className="muted small">โหลดข้อมูลเมื่อ {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
     </>;
 }
