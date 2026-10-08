@@ -11,7 +11,7 @@ export const dynamic='force-dynamic';
 export const maxDuration=60;
 export async function generateMetadata({params}:{params:Promise<{name:string}>}):Promise<Metadata>{
   const name=ge6CandidateByName.get((await params).name.toLowerCase());
-  return {title:`${name??'เมมเบอร์'} · ประมาณคะแนน GE6 — คุณนักสืบโตเฟ่อ`};
+  return {title:`${name??'เมมเบอร์'} — คุณนักสืบโตเฟ่อ`};
 }
 const short=(address:string)=>address.slice(0,8)+'…'+address.slice(-6);
 const date=(value:string|null)=>value?new Date(value).toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'}):'—';
@@ -22,7 +22,7 @@ export default async function MemberPage({params,searchParams}:{params:Promise<{
   const raw=(await searchParams).page;
   const page=raw&&/^[1-9]\d{0,5}$/.test(raw)?Number(raw):1;
   return <div className="shell"><SiteHeader/><main className="board voters-board member-board">
-    <h1>{name} · ประมาณคะแนน GE6</h1>
+    <h1>{name}</h1>
     <Suspense fallback={<div className="loading-panel" role="status"><span className="spinner" aria-hidden="true"/>กำลังโหลดคะแนนโหวตและกระเป๋าที่เกี่ยวข้อง…</div>}>
       <MemberContent name={name} page={page}/>
     </Suspense>
@@ -40,9 +40,9 @@ async function MemberContent({name,page}:{name:string;page:number}){
         <span>คาดจากโหวตหลังผลด่วน <strong>{displayShort(data.postVotes)}</strong></span>
         <span>รวมตามตารางอันดับปัจจุบัน <strong>{displayShort(data.total)}</strong> GE6</span>
       </div>
-      <p className="muted small">GE6 เป็นโหวตลับ จึงระบุกระเป๋าที่สร้างคะแนนผลด่วนไม่ได้ รายการด้านล่างแจกแจงเฉพาะยอดโหวตหลังผลด่วนที่คาดว่าเป็นของ {name} โดยใช้รายชื่อที่กรอกเองก่อนประวัติโหวต ไม่รวม GE6 ที่ยังถืออยู่ในกระเป๋า</p>
+      <p className="muted small">GE6 เป็นโหวตลับ จึงระบุผู้รับจริงของแต่ละกระเป๋าไม่ได้ ตารางนี้คาดจาก GE6 ที่โหวตแล้วทั้งหมด โดยใช้รายชื่อที่กรอกเองก่อนประวัติโหวต ยอดก่อนผลด่วนรวมอยู่ในคะแนนผลด่วนแล้ว จึงไม่บวกซ้ำในตารางอันดับปัจจุบัน</p>
       <h2>กระเป๋าที่คาดว่าโหวตให้ {name}</h2>
-      <p className="muted small">ทั้งหมด {data.walletCount.toLocaleString()} กระเป๋า · เรียงตามยอดโหวตที่คาดให้เมมเบอร์</p>
+      <p className="muted small">ทั้งหมด {data.walletCount.toLocaleString()} กระเป๋า · หน้าละ 20 กระเป๋า · เรียงตามยอดโหวตที่คาดให้ {name} มากที่สุด</p>
       <div className="table-wrap" tabIndex={0} aria-label={`กระเป๋าที่คาดว่าโหวตให้ ${name}`}><table>
         <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดว่าโหวตให้ {name}</th><th className="num">GE6 โหวตแล้วทั้งกระเป๋า</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.wallets.map((wallet,index)=>{const href='/?address='+wallet.address;return <tr key={wallet.address}>

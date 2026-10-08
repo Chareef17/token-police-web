@@ -96,34 +96,60 @@ export async function ge6CurrentRanking(includeHoldings=false){
   return ranking;
 }
 
+// The member wallet list covers every GE6 voter. Votes before the preliminary
+// snapshot are shown here for discovery, but never added to the current ranking.
+async function allMemberVoters(name:string){
+  const db=await database();
+  const [ge6Rows,historyRows,manualRows]=await db.batch([
+    'SELECT address,amount FROM ge6_events WHERE address IS NOT NULL',
+    {sql:`SELECT address,event,member,amount FROM votes WHERE event IN (?,?,?) AND address IN (SELECT address FROM ge6_events)`,args:events},
+    'SELECT address,rank1,rank2,rank3 FROM manual_predictions WHERE address IN (SELECT address FROM ge6_events)',
+  ],'read');
+  const totals=new Map<string,bigint>();
+  for(const row of ge6Rows.rows){const address=String(row.address).toLowerCase();if(addressPattern.test(address))totals.set(address,(totals.get(address)??0n)+units(String(row.amount)));}
+  const history=new Map<string,Map<string,bigint>>();
+  for(const row of historyRows.rows){
+    const address=String(row.address).toLowerCase();
+    const member=ge6CandidateByName.get(String(row.member).trim().toLowerCase());
+    if(!member||!totals.has(address))continue;
+    const scores=history.get(address)??new Map<string,bigint>();
+    scores.set(member,(scores.get(member)??0n)+units(String(row.amount))*(row.event==='Thai-Chinese 2025'?6n:68n));
+    history.set(address,scores);
+  }
+  const manual=new Map<string,string[]>();
+  for(const row of manualRows.rows){
+    const members=[row.rank1,row.rank2,row.rank3].filter(value=>value!=null)
+      .map(value=>ge6CandidateByName.get(String(value).toLowerCase())).filter((value):value is NonNullable<typeof value>=>Boolean(value));
+    if(members.length)manual.set(String(row.address).toLowerCase(),members);
+  }
+  const matches:{address:string;votes:bigint;voted:bigint}[]=[];
+  for(const [address,total] of totals){
+    const choices=manual.get(address)??[...(history.get(address)??new Map<string,bigint>())]
+      .sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1)
+      .slice(0,3).map(([candidate])=>candidate);
+    if(!choices.includes(name))continue;
+    const share=splitVote(total,choices).find(entry=>entry[0]===name)?.[1]??0n;
+    if(share>0n)matches.push({address,votes:share,voted:total});
+  }
+  return matches.sort((a,b)=>a.votes===b.votes?a.address.localeCompare(b.address):a.votes>b.votes?-1:1);
+}
+
 export async function ge6MemberProjection(name:string,page=1){
-  const result=await calculateRanking(false);
+  const [result,contributions]=await Promise.all([calculateRanking(false),allMemberVoters(name)]);
   const ranked=result.rows.find((row:{name:string})=>row.name===name);
   if(!ranked)return null;
-  const contributions=[...(result.contributions.get(name)??new Map())]
-    .filter(([,values])=>values.votes>0n)
-    .map(([address,values])=>({address,votes:values.votes}))
-    .sort((a,b)=>a.votes===b.votes?a.address.localeCompare(b.address):a.votes>b.votes?-1:1);
   const pageSize=20,pages=Math.max(1,Math.ceil(contributions.length/pageSize));
   const current=Math.min(Math.max(1,page),pages);
   const slice=contributions.slice((current-1)*pageSize,current*pageSize);
   const addresses=slice.map(item=>item.address);
-  const [details,ge6Rows]=await Promise.all([
-    voterDetails(addresses),
-    addresses.length?(await database()).execute({sql:`SELECT address,amount FROM ge6_events WHERE address IN (${addresses.map(()=>'?').join(',')})`,args:addresses}):Promise.resolve({rows:[]}),
-  ]);
-  const walletVotes=new Map<string,bigint>();
-  for(const row of ge6Rows.rows){
-    const address=String(row.address).toLowerCase();
-    walletVotes.set(address,(walletVotes.get(address)??0n)+units(String(row.amount)));
-  }
+  const details=await voterDetails(addresses);
   const preliminaryEntry=(preliminary.results as [string,string][]).findIndex(([candidate])=>candidate===name);
   return {name,preliminaryRank:preliminaryEntry>=0?preliminaryEntry+1:null,published:ranked.published,
     baseline:amount(units(ranked.votedAmount)-(result.additions.get(name)??0n)),
     postVotes:amount(result.additions.get(name)??0n),total:ranked.votedAmount,
     wallets:slice.map(item=>({address:item.address,name:details.get(item.address)?.name??null,
       contributionVotes:amount(item.votes),
-      voted:amount(walletVotes.get(item.address)??0n),ge6:details.get(item.address)?.ge6??null,bnk:details.get(item.address)?.bnk??null,
+      voted:amount(item.voted),ge6:details.get(item.address)?.ge6??null,bnk:details.get(item.address)?.bnk??null,
       likely:details.get(item.address)?.likely??[],topVote:details.get(item.address)?.topVote??null,lastTxAt:details.get(item.address)?.lastTxAt??null})),
     page:current,pages,walletCount:contributions.length,fetchedAt:result.fetchedAt};
 }
