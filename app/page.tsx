@@ -6,7 +6,7 @@ import Ge6VotersTable from './ge6-voters-table';
 import ManualPredictions,{type ManualPrediction} from './manual-predictions';
 type Transaction={id:string;event:string;member:string;amount:string;tx_hash:string|null;voted_at:string|null};
 type Wallet={address:string;name:{name:string;version:number}|null;manualPrediction:ManualPrediction|null;events:{event:string;total:string;members:{member:string;amount:string;transactions:number}[]}[];ge6:{amount:string;transactions:number;items:Transaction[]};transactions:{id:string;event:string;member:string;amount:string;tx_hash:string|null;voted_at:string|null}[];transactionCount:number;importedAt:string;ge6Status:{lastSuccess?:string;confirmedBlock?:number;phase?:string}|null};
-type Suggestion={address:string;name:string};
+type Suggestion={kind:'member';name:string}|{kind:'wallet';address:string;name:string};
 type Balance={balances:{symbol:string;amount:string}[];fetchedAt:string};
 const date=(value?:string|null)=>value?new Date(value).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'}):'ยังไม่มีข้อมูล';
 function Icon({kind}:{kind:'search'|'shield'|'copy'|'external'|'wallet'}){return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{kind==='search'?<><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></>:kind==='shield'?<><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z"/><path d="m8 12 3 3 5-6"/></>:kind==='copy'?<><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></>:kind==='external'?<><path d="M14 3h7v7m0-7L10 14"/><path d="M10 3H3v18h18v-7"/></>:<><rect x="3" y="6" width="18" height="15" rx="3"/><path d="M3 8V5l14-3v4m4 6h-6v5h6"/></>}</svg>}
@@ -25,7 +25,7 @@ export default function Home(){
     const timer=setTimeout(()=>{findNames(q).then(results=>{if(id===lookup.current){setSuggestions(results);setActive(-1);}}).catch(()=>{});},200);
     return ()=>clearTimeout(timer);
   },[input,isAddressInput]);
-  function pick(s:Suggestion){lookup.current++;setOpen(false);setSuggestions([]);void search(s.address);}
+  function pick(s:Suggestion){lookup.current++;setOpen(false);setSuggestions([]);if(s.kind==='member'){window.location.assign('/member/'+encodeURIComponent(s.name));return;}void search(s.address);}
   async function submit(){
     if(isAddressInput||!input.trim()){void search(input);return;}
     const q=input.trim();const id=++lookup.current;setOpen(false);
@@ -61,7 +61,7 @@ export default function Home(){
     <main>
       <section className="support-banner" aria-label="ร่วมเชียร์ Nammonn BNK48 สู่เป้าหมายอันดับ 13 ใน GE2026"><div className="support-copy"><span className="support-kicker">NAMMONN BNK48 · GE2026</span><h1 className="jp-title">世界はどこまで青空なのか？</h1></div><div className="thirteen-mark" aria-hidden="true"><span>ROAD TO</span><strong>13</strong></div></section><section className="search-section">
         <div className="search-box"><form className="search-form" onSubmit={e=>{e.preventDefault();void submit();}}><span className="search-icon"><Icon kind="search"/></span><label className="sr-only" htmlFor="address">Wallet address หรือชื่อ</label><input ref={inputRef} id="address" className={input&&!isAddressInput?'is-name':undefined} value={input} onChange={e=>{setInput(e.target.value);setOpen(true);}} onFocus={()=>setOpen(true)} onBlur={()=>setOpen(false)} onKeyDown={onKeyDown} placeholder="วาง wallet address 0x... หรือพิมพ์ชื่อ" autoComplete="off" spellCheck={false} role="combobox" aria-expanded={open&&suggestions.length>0} aria-controls="name-suggestions" aria-autocomplete="list" aria-activedescendant={active>=0?'suggestion-'+active:undefined}/><button className="primary" disabled={loading} type="submit">{loading?'กำลังค้นหา…':'ค้นหา'}</button></form>
-        {open&&suggestions.length>0&&<ul className="suggestions" id="name-suggestions" role="listbox">{suggestions.map((s,i)=><li key={s.address} id={'suggestion-'+i} role="option" aria-selected={i===active} className={i===active?'active':undefined} onMouseDown={e=>{e.preventDefault();pick(s);}} onMouseEnter={()=>setActive(i)}><span className="suggestion-name">{s.name}</span><span className="suggestion-address">{s.address.slice(0,8)}…{s.address.slice(-6)}</span></li>)}</ul>}</div>
+        {open&&suggestions.length>0&&<ul className="suggestions" id="name-suggestions" role="listbox">{suggestions.map((s,i)=><li key={s.kind==='member'?'member:'+s.name:s.address} id={'suggestion-'+i} role="option" aria-selected={i===active} className={i===active?'active':undefined} onPointerDown={e=>{e.preventDefault();pick(s);}} onMouseEnter={()=>setActive(i)}><span className="suggestion-name">{s.name}</span>{s.kind==='member'?<span className="suggestion-member-tag">Member</span>:<span className="suggestion-address">{s.address.slice(0,8)}…{s.address.slice(-6)}</span>}</li>)}</ul>}</div>
         <div className="search-caption"><span>ข้อมูลจาก TokenX Scan</span></div>
         {error&&<p className="error" role="alert">{error}</p>}
       </section>
