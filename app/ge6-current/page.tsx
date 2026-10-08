@@ -6,7 +6,7 @@ import { displayShort } from '@/lib/amount.mjs';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'ประมาณอันดับ GE6 ปัจจุบัน — คุณนักสืบโตเฟ่อ'};
 const date=(value:string)=>new Date(value).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'});
-const tier=(rank:number)=>rank===1?'first':rank<=7?'kami':rank<=12?'senbatsu':rank<=24?'under':rank<=36?'next':'outside';
+const tier=(rank:number)=>rank<=12?'senbatsu':rank<=24?'under':rank<=36?'next':'outside';
 
 export default async function Page(){
   let data;
@@ -20,7 +20,7 @@ export default async function Page(){
         <span>ยังระบุผู้รับไม่ได้ <strong>{displayShort(data.unassigned)}</strong> GE6</span>
       </div>
       <div className="current-legend" aria-label="สีแสดงกลุ่มอันดับ">
-        <span className="first">อันดับ 1</span><span className="kami">Kami 7 · 1–7</span><span className="senbatsu">Senbatsu · 1–12</span><span className="under">Under Girls · 13–24</span><span className="next">Next Girls · 25–36</span><span className="outside">ไม่ติดอันดับ · 37+</span>
+        <span className="senbatsu">Senbatsu · 1–12</span><span className="under">Under Girls · 13–24</span><span className="next">Next Girls · 25–36</span><span className="outside">ไม่ติดอันดับ · 37+</span>
       </div>
       <div className="table-wrap"><table>
         <thead><tr><th>ลำดับ</th><th>ชื่อ</th><th className="num">จำนวน (ประมาณ)</th><th className="num">ช่วงอันดับที่เป็นไปได้</th></tr></thead>

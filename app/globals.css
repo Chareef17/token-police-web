@@ -123,20 +123,16 @@ header{border-bottom-color:#ffffff80}
 .current-summary{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}.current-summary span{padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:13px;color:var(--muted)}.current-summary strong{color:var(--text);font-variant-numeric:tabular-nums}.current-method{line-height:1.8}.current-board .table-wrap{border:1px solid var(--line);border-radius:14px}.current-board th{white-space:nowrap}.current-board td.current-cell{padding:16px 12px;height:auto;vertical-align:middle}.current-board .who strong{display:inline}.current-board .who .tag{margin-left:10px}.current-board .num{white-space:nowrap}.current-footnote{margin-top:18px!important;line-height:1.8}
 .current-legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
 .current-legend span{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--tier-line);background:linear-gradient(105deg,var(--tier-from),var(--tier-to));color:var(--text)}
-.current-legend .first,.current-board tbody .tier-first{--tier-from:#ffc94f;--tier-to:#fff0be;--tier-line:#d58a10}
-.current-legend .kami,.current-board tbody .tier-kami{--tier-from:#ffe083;--tier-to:#fff8df;--tier-line:#d3a43d}
-.current-legend .senbatsu,.current-board tbody .tier-senbatsu{--tier-from:#a4d7ff;--tier-to:#e9f7ff;--tier-line:#438bc6}
-.current-legend .under,.current-board tbody .tier-under{--tier-from:#c1a8f3;--tier-to:#f2ebff;--tier-line:#8462c2}
-.current-legend .next,.current-board tbody .tier-next{--tier-from:#ffbaa0;--tier-to:#fff0e7;--tier-line:#ce7858}
-.current-legend .outside,.current-board tbody .tier-outside{--tier-from:#e5eaf0;--tier-to:#f8fafc;--tier-line:#aab7c4}
+.current-legend .senbatsu,.current-board tbody .tier-senbatsu{--tier-from:#c6e3f7;--tier-to:#eff8ff;--tier-line:#549ac9}
+.current-legend .under,.current-board tbody .tier-under{--tier-from:#d8ebf8;--tier-to:#f4faff;--tier-line:#83b5d8}
+.current-legend .next,.current-board tbody .tier-next{--tier-from:#e6f2fa;--tier-to:#f9fcff;--tier-line:#aecde2}
+.current-legend .outside,.current-board tbody .tier-outside{--tier-from:#f3f8fc;--tier-to:#fff;--tier-line:#d5e3ed}
 .current-board tbody tr{background:linear-gradient(100deg,var(--tier-from),var(--tier-to))}
 .current-board tbody tr td{background:transparent}
 .current-board tbody tr td:first-child{border-left:5px solid var(--tier-line);font-weight:700;color:var(--text)}
 .current-board tbody tr:hover{background:linear-gradient(100deg,var(--tier-from),var(--tier-to))}
 .current-board tbody tr:hover td{filter:brightness(.94)}
-[data-theme=dark] .current-legend .first,[data-theme=dark] .current-board .tier-first{--tier-from:#76561a;--tier-to:#3d321d;--tier-line:#ffd36e}
-[data-theme=dark] .current-legend .kami,[data-theme=dark] .current-board .tier-kami{--tier-from:#554722;--tier-to:#302b1e;--tier-line:#e5bf72}
-[data-theme=dark] .current-legend .senbatsu,[data-theme=dark] .current-board .tier-senbatsu{--tier-from:#22577e;--tier-to:#18334a;--tier-line:#78c4f3}
-[data-theme=dark] .current-legend .under,[data-theme=dark] .current-board .tier-under{--tier-from:#4b3c75;--tier-to:#2b2946;--tier-line:#c3adff}
-[data-theme=dark] .current-legend .next,[data-theme=dark] .current-board .tier-next{--tier-from:#704336;--tier-to:#3d2e2a;--tier-line:#ffb495}
-[data-theme=dark] .current-legend .outside,[data-theme=dark] .current-board .tier-outside{--tier-from:#20344d;--tier-to:#14253a;--tier-line:#3d5875}
+[data-theme=dark] .current-legend .senbatsu,[data-theme=dark] .current-board .tier-senbatsu{--tier-from:#285577;--tier-to:#1a3855;--tier-line:#71b8e8}
+[data-theme=dark] .current-legend .under,[data-theme=dark] .current-board .tier-under{--tier-from:#224563;--tier-to:#19344e;--tier-line:#568fb7}
+[data-theme=dark] .current-legend .next,[data-theme=dark] .current-board .tier-next{--tier-from:#1b3853;--tier-to:#172e47;--tier-line:#426d8e}
+[data-theme=dark] .current-legend .outside,[data-theme=dark] .current-board .tier-outside{--tier-from:#172b42;--tier-to:#14253a;--tier-line:#304b65}
