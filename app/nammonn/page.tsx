@@ -11,7 +11,6 @@ const date=(value:string|null)=>value?new Date(value).toLocaleDateString('th-TH'
 export default async function Nammonn(){
   return <div className="shell"><SiteHeader/><main className="board voters-board fan-board">
     <h1>สายเปย์น้ำมนต์</h1>
-    <p className="muted board-intro">กระเป๋าที่โหวตให้น้ำมนต์มากกว่าเมมเบอร์คนอื่นใน GE5 หรือ Thai-Japan 2026 เรียงตามยอดที่โหวตน้ำมนต์รวม</p>
     <Suspense fallback={<div className="loading-panel" role="status"><span className="spinner" aria-hidden="true"/>กำลังโหลดข้อมูลสายเปย์น้ำมนต์…</div>}><NammonnContent/></Suspense>
   </main></div>;
 }

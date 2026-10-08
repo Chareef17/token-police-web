@@ -38,7 +38,6 @@ export default function Ge6VotersTable(){
   },[page,retry]);
   return <section className="board voters-board" aria-label="อันดับผู้โหวต GE6">
     <h2>อันดับผู้โหวต GE6</h2>
-    <p className="muted board-intro">ยอดโหวตสะสม เรียงจากมากไปน้อย · หน่วย Token</p>
     <a className="voter-holder-link secondary" href="/ge6-holders">ดูผู้ถือ GE6 สูงสุด</a>
     {loading?<div className="loading-panel" role="status"><span className="spinner"/> กำลังโหลดอันดับ…</div>:error?<p className="error" role="alert">{error} <button className="text-button" onClick={()=>setRetry(r=>r+1)}>ลองใหม่</button></p>:data&&<>
       <div className="voter-cards">{data.rows.map(row=><article className="voter-card" key={row.address}><div className="voter-card-head"><span className="voter-card-rank">{String(row.rank).padStart(2,'0')}</span><a href={'/?address='+row.address} className="voter-card-identity"><strong>{row.name??short(row.address)}</strong><code>{row.name?short(row.address):'กระเป๋า GE6'}</code></a></div><div className="voter-card-stats"><div><span>GE6 โหวตแล้ว</span><strong>{displayShort(row.voted)}</strong></div><div><span>GE6 ถืออยู่</span><strong>{row.ge6===null?'—':displayShort(row.ge6)}</strong></div><div><span>BNK ถืออยู่</span><strong>{row.bnk===null?'—':displayShort(row.bnk)}</strong></div></div><div className="voter-card-extra"><span>น่าจะโหวตใคร: {row.likely.length?row.likely.map((name,i)=>`${i+1}. ${name}`).join(' · '):'—'}</span><span>เคลื่อนไหวล่าสุด: {date(row.lastTxAt)}</span></div></article>)}</div>
@@ -56,7 +55,6 @@ export default function Ge6VotersTable(){
         </tr>;})}</tbody>
       </table></div>
       <div className="voters-pagination"><span>ทั้งหมด {data.total.toLocaleString()} กระเป๋า · หน้า {data.page}/{data.pages}</span><div><button className="secondary" disabled={page<=1} onClick={()=>changePage(page-1)}>ก่อนหน้า</button><button className="secondary" disabled={page>=data.pages} onClick={()=>changePage(page+1)}>ถัดไป</button></div></div>
-      <p className="muted small">“น่าจะโหวตใคร” ใช้เฉพาะ GE5, Thai-Chinese และ Thai-Japan โดยกรองผู้สมัคร GE6 · อันดับย้อนหลังถ่วงน้ำหนัก Thai-Chinese ประมาณ 6 บาท/เหรียญ เทียบกับงานอื่น 68 บาท/เหรียญ · ยอดคงเหลือและธุรกรรมล่าสุดจาก TokenX Scan · อัปเดต {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
     </>}
   </section>;
 }

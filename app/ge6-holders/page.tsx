@@ -6,11 +6,9 @@ import { displayShort as display } from '@/lib/amount.mjs';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'ผู้ถือ GE6 สูงสุด — คุณนักสืบโตเฟ่อ'};
 const short=(a:string)=>a.slice(0,8)+'…'+a.slice(-6);
-const date=(value:string)=>new Date(value).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'});
 export default async function Holders(){
   return <div className="shell"><SiteHeader/><main className="board">
     <h1>ผู้ถือ GE6 สูงสุด 20 อันดับ</h1>
-    <p className="muted board-intro">ยอดเหรียญ GE6 ที่ยังอยู่ในกระเป๋าตอนนี้ จาก TokenX Scan</p>
     <Suspense fallback={<div className="loading-panel" role="status"><span className="spinner" aria-hidden="true"/>กำลังโหลดข้อมูลผู้ถือ GE6…</div>}><HoldersContent/></Suspense>
   </main></div>;
 }
@@ -26,7 +24,6 @@ async function HoldersContent(){
           <td className="num" data-label="GE6 ถืออยู่"><a href={href}><strong>{display(h.amount)}</strong></a></td>
         </tr>;})}</tbody>
       </table></div>
-      <p className="muted small">อัปเดตเมื่อ {date(data.fetchedAt)}</p>
     </>}
   </>;
 }

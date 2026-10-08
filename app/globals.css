@@ -188,3 +188,28 @@ header{border-bottom-color:#ffffff80}
 @media(max-width:760px){.header-nav a:last-child{display:none}.forecast-heading h1,.forecast-heading p,.forecast-goal-label{overflow-wrap:anywhere;white-space:normal}.forecast-goal-label{line-height:1.5}.current-board .current-legend{display:none}}
 .voter-holder-link{display:none}
 @media(max-width:760px){.voter-holder-link{display:inline-block;margin:0 0 16px}}
+
+/* Compact mobile cards: identity first, then one readable line per value. */
+@media(max-width:760px){
+  .responsive-card-table tbody tr:not(.mobile-tier-heading){grid-template-columns:42px minmax(0,1fr);gap:0 12px;padding:14px 16px}
+  .responsive-card-table td.rank{grid-column:1;grid-row:1;width:38px;height:38px;border-radius:10px;font-size:16px}
+  .responsive-card-table td.who{grid-column:2;grid-row:1;min-width:0;padding:0 0 9px}
+  .responsive-card-table td.who strong{font-size:16px;line-height:1.3}
+  .responsive-card-table td.who code{display:block;font-size:11px}
+  .responsive-card-table td[data-label],.board .responsive-card-table tbody td[data-label],.current-board .responsive-card-table tbody td.current-cell[data-label]{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 0;border:0;border-top:1px solid var(--line);min-width:0;min-height:33px;text-align:right;font-size:14px;line-height:1.4}
+  .responsive-card-table td[data-label]::before{display:inline;flex:0 0 auto;margin:0;text-align:left;font-size:11px}
+  .responsive-card-table td.num a{font-size:14px}
+  .responsive-card-table td.vote-hint,.responsive-card-table td.last-activity{font-size:12px}
+  .responsive-card-table td.vote-hint a,.responsive-card-table td.last-activity a{font-size:12px}
+  .forecast-rank-table tbody tr:not(.mobile-tier-heading){padding:12px 15px}
+  .forecast-rank-table td.who{padding-bottom:7px}
+  .forecast-rank-table td.num,.forecast-rank-table td.num:last-child{font-size:15px}
+  .forecast-rank-table td.num strong{font-size:17px}
+  .forecast-rank-table td.num[data-label="ช่วงอันดับ"]{color:var(--muted)}
+  .forecast-rank-table .mobile-tier-heading th{font-size:13px}
+  .member-board .current-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 18px}
+  .member-board .current-summary span{display:flex;flex-direction:column;padding:10px 12px;font-size:11px}
+  .member-board .current-summary strong{font-size:16px}
+  .transaction-cards td.transaction-date,.admin-cards td.admin-card-name{grid-column:1/-1}
+  .transaction-cards td[data-label],.admin-cards td[data-label]{grid-column:1/-1}
+}

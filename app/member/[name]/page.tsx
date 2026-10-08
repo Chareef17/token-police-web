@@ -40,9 +40,8 @@ async function MemberContent({name,page}:{name:string;page:number}){
         <span>คาดจากโหวตหลังผลด่วน <strong>{displayShort(data.postVotes)}</strong></span>
         <span>รวมตามตารางอันดับปัจจุบัน <strong>{displayShort(data.total)}</strong> GE6</span>
       </div>
-      <p className="muted small">GE6 เป็นโหวตลับ จึงระบุผู้รับจริงของแต่ละกระเป๋าไม่ได้ ตารางนี้คาดจาก GE6 ที่โหวตแล้วทั้งหมด โดยใช้รายชื่อที่กรอกเองก่อนประวัติโหวต ยอดก่อนผลด่วนรวมอยู่ในคะแนนผลด่วนแล้ว จึงไม่บวกซ้ำในตารางอันดับปัจจุบัน</p>
       <h2>กระเป๋าที่คาดว่าโหวตให้ {name}</h2>
-      <p className="muted small">ทั้งหมด {data.walletCount.toLocaleString()} กระเป๋า · หน้าละ 20 กระเป๋า · เรียงตามยอดโหวตที่คาดให้ {name} มากที่สุด</p>
+      <p className="muted small">{data.walletCount.toLocaleString()} กระเป๋า</p>
       <div className="table-wrap responsive-card-table" tabIndex={0} aria-label={`กระเป๋าที่คาดว่าโหวตให้ ${name}`}><table>
         <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดว่าโหวตให้ {name}</th><th className="num">GE6 โหวตแล้วทั้งกระเป๋า</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.wallets.map((wallet,index)=>{const href='/?address='+wallet.address;return <tr key={wallet.address}>
@@ -56,6 +55,5 @@ async function MemberContent({name,page}:{name:string;page:number}){
         </tr>;})}</tbody>
       </table></div>
       {data.pages>1&&<nav className="voters-pagination" aria-label="หน้ากระเป๋า"><span>หน้า {data.page}/{data.pages}</span><div>{data.page>1&&<Link className="secondary" prefetch={false} href={data.page===2?base:`${base}?page=${data.page-1}`}>ก่อนหน้า</Link>}{data.page<data.pages&&<Link className="secondary" prefetch={false} href={`${base}?page=${data.page+1}`}>ถัดไป</Link>}</div></nav>}
-      <p className="muted small">โหลดข้อมูลเมื่อ {new Date(data.fetchedAt).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p>
     </>;
 }

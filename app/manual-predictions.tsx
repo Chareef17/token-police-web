@@ -56,7 +56,7 @@ export default function ManualPredictions({address,initial,onSaved}:{address:str
   }
   const visibleCount=selected[1]?3:selected[0]?2:1;
   return <section className="manual-predictions" aria-label="ลำดับคนที่น่าจะโหวต">
-    <div className="manual-heading"><div><h2 className="section-title">น่าจะโหวตใคร</h2><p className="muted small">เลือกลำดับ 1–3 จากผู้สมัคร GE6 ที่แนะนำ · ลำดับที่ตั้งเองจะแสดงในตาราง</p></div>
+    <div className="manual-heading"><div><h2 className="section-title">น่าจะโหวตใคร</h2></div>
       {!editing&&<button className="secondary" type="button" onClick={start}>{initial?.members.length?'แก้ไขลำดับ':'เพิ่มลำดับ'}</button>}
     </div>
     {!editing&&<>{initial?.members.length?<ol className="manual-list">{initial.members.map(member=><li key={member}>{member}</li>)}</ol>:<p className="muted small">ยังไม่ได้ตั้งลำดับเอง</p>}</>}
