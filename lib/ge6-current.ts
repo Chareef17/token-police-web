@@ -17,6 +17,11 @@ async function calculateRanking(mode:RankingMode='votes') {
   const includeHoldings=mode!=='votes';
   const heldPromise=includeHoldings?ge6HeldBalances():Promise.resolve(new Map<string,bigint>());
   const db = await database();
+  const freshnessRows = (await db.execute({sql:"SELECT key,value FROM metadata WHERE key IN ('ge6Status','ge6HoldersAt','bnkHoldersAt')"})).rows;
+  const freshness = Object.fromEntries(freshnessRows.map(row=>[String(row.key),String(row.value)]));
+  const ge6Status: {lastSuccess?:string;phase?:string}|null = JSON.parse(freshness.ge6Status??'null');
+  const ge6HoldersAt: string|null = freshness.ge6HoldersAt?JSON.parse(freshness.ge6HoldersAt):null;
+  const bnkHoldersAt: string|null = freshness.bnkHoldersAt?JSON.parse(freshness.bnkHoldersAt):null;
   const votes = (await db.execute({sql:'SELECT address,amount,voted_at FROM ge6_events WHERE julianday(voted_at)>julianday(?)',args:[preliminary.cutoff]})).rows;
   const wallets = new Map<string,bigint>();
   const todayWallets = new Map<string,bigint>();
@@ -117,7 +122,7 @@ async function calculateRanking(mode:RankingMode='votes') {
   if(trackedTotal+untrackedTotal!==votedTotal)throw new Error('GE6 vote totals do not reconcile');
   return {rows,mode,includeHoldings,contributions,additions,heldAdditions,
     cutoff:preliminary.cutoff,lastVoteAt,postVoteCount:votes.length,walletCount:wallets.size,manualWallets,
-    allocated:amount(allocated),unassigned:amount(unassigned),votedTotal:amount(votedTotal),trackedTotal:amount(trackedTotal),untrackedTotal:amount(untrackedTotal),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),fetchedAt:new Date().toISOString()};
+    allocated:amount(allocated),unassigned:amount(unassigned),votedTotal:amount(votedTotal),trackedTotal:amount(trackedTotal),untrackedTotal:amount(untrackedTotal),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),voteSyncedAt:ge6Status?.lastSuccess??null,ge6HoldersAt,bnkHoldersAt,syncError:ge6Status?.phase==='error',fetchedAt:new Date().toISOString()};
 }
 
 export async function ge6CurrentRanking(mode:RankingMode='votes'){

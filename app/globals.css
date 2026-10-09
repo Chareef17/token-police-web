@@ -389,3 +389,6 @@ a.member-avatar-item:focus-visible{outline:2px solid var(--accent);outline-offse
 @media(max-width:390px){.header-nav .nav-icon{width:21px;height:21px}.header-nav .nav-icon svg{width:19px;height:19px}}
 /* Keep loading rings circular when a long label shares their flex row. */
 .spinner{display:block;flex:0 0 20px;min-width:20px;min-height:20px;aspect-ratio:1}
+.forecast-freshness{text-align:center;color:var(--muted);font-size:12px;margin:4px auto 18px}
+.forecast-freshness.stale{color:#a65c29}
+[data-theme=dark] .forecast-freshness.stale{color:#e6bd7d}

@@ -46,6 +46,18 @@ test('incremental passes only add new votes and keep earlier ones',async()=>{
     assert.equal((await one(db,"SELECT count(*) n FROM votes WHERE event='GE6'")).n,3);
   }finally{db.close();}
 });
+test('routine sync stays incremental until the daily full audit',async()=>{
+  const {db,transport}=await setup([vote(0)]);
+  try{
+    const start=Date.now();
+    await poll(db,transport,{now:start});
+    let full;
+    await poll(db,transport,{now:start+2*3600000,onProgress:state=>{full=state.full;}});
+    assert.equal(full,false);
+    await poll(db,transport,{now:start+24*3600000,onProgress:state=>{full=state.full;}});
+    assert.equal(full,true);
+  }finally{db.close();}
+});
 test('missing vote receipts and upstream failures do not replace the last good snapshot',async()=>{
   const {db,state,transport}=await setup([vote(0)]);
   try{
