@@ -46,6 +46,17 @@ test('incremental passes only add new votes and keep earlier ones',async()=>{
     assert.equal((await one(db,"SELECT count(*) n FROM votes WHERE event='GE6'")).n,3);
   }finally{db.close();}
 });
+test('incremental pass verifies new votes without loading old rows into the overlap',async()=>{
+  const old=vote(0,height-500),overlap=vote(1,height-20);
+  const {db,state,transport}=await setup([old,overlap]);
+  try{
+    await poll(db,transport);
+    state.logs=[overlap,vote(2,height-15)];
+    assert.equal((await poll(db,transport,{now:Date.now()+1000})).votes,3);
+    assert.equal((await one(db,'SELECT count(*) n FROM ge6_events')).n,3);
+    assert.equal((await db.execute({sql:'SELECT vote_index FROM ge6_events WHERE block_number=?',args:[height-500]})).rows[0].vote_index,'0');
+  }finally{db.close();}
+});
 test('routine sync stays incremental until the daily full audit',async()=>{
   const {db,transport}=await setup([vote(0)]);
   try{

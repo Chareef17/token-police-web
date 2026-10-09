@@ -42,6 +42,7 @@ export default function LiveForecastSync({mode,voteSyncedAt,chainVoteCount,ge6Ho
 
   const held=[...(mode==='votes'?[]:[ge6HoldersAt]),...(mode==='all'?[bnkHoldersAt]:[])];
   const heldAt=held.length&&held.every(Boolean)?new Date(Math.min(...held.map(value=>Date.parse(value!)))).toISOString():null;
-  const stale=failed||!lastSync||Date.now()-Date.parse(lastSync)>20*60*1000||(mode!=='votes'&&(!heldAt||Date.now()-Date.parse(heldAt)>40*60*1000));
-  return <p className={stale?'forecast-freshness stale':'forecast-freshness'} aria-live="polite"><span className={failed?'forecast-live delayed':'forecast-live'} aria-label="ตรวจอัตโนมัติ">{failed?'รอซิงก์':'LIVE'}</span> โหวตล่าสุด {formatTime(lastSync)}{mode!=='votes'&&<> · เหรียญคงเหลือ {formatTime(heldAt)}</>}{stale?' · ข้อมูลอาจล่าช้า':''}</p>;
+  const voteStale=failed||!lastSync||Date.now()-Date.parse(lastSync)>20*60*1000;
+  const stale=voteStale||(mode!=='votes'&&(!heldAt||Date.now()-Date.parse(heldAt)>40*60*1000));
+  return <p className={stale?'forecast-freshness stale':'forecast-freshness'} aria-live="polite"><span className={voteStale?'forecast-live delayed':'forecast-live'} aria-label="ตรวจอัตโนมัติ">{voteStale?'รอซิงก์':'LIVE'}</span> โหวตล่าสุด {formatTime(lastSync)}{mode!=='votes'&&<> · เหรียญคงเหลือ {formatTime(heldAt)}</>}{stale?' · ข้อมูลอาจล่าช้า':''}</p>;
 }
