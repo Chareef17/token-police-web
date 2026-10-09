@@ -25,7 +25,7 @@ On Windows after `pnpm build`, `powershell -File scripts/Start-Web.ps1` runs the
 - Wallet balances read TokenX Scan directly and use a one-minute cache. TokenX rejects requests without a browser User-Agent, so all TokenX calls send browser headers.
 - Each pass writes only rows that changed, keeping hosted-database writes small.
 
-The page reads the latest committed snapshot when searching or refreshing. It does not wait for a full blockchain scan on each click. The last successful sync time is shown; failed/stale updates are flagged. Keep the web indexer running for new transactions. Stopping the Discord bot has no effect on the web indexer.
+The header refresh button runs a short GE6 transaction sync before reloading the current page. It skips the daily full audit, which remains in the background worker. Holder-balance snapshots are refreshed by the scheduled worker. The last successful vote sync time is shown; failed/stale updates are flagged. Stopping the Discord bot has no effect on the web indexer.
 
 ## Names
 

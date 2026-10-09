@@ -56,6 +56,8 @@ test('routine sync stays incremental until the daily full audit',async()=>{
     assert.equal(full,false);
     await poll(db,transport,{now:start+24*3600000,onProgress:state=>{full=state.full;}});
     assert.equal(full,true);
+    await poll(db,transport,{now:start+48*3600000,skipScheduledAudit:true,onProgress:state=>{full=state.full;}});
+    assert.equal(full,false);
   }finally{db.close();}
 });
 test('missing vote receipts and upstream failures do not replace the last good snapshot',async()=>{
