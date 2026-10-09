@@ -13,6 +13,7 @@ const tier=(rank:number)=>rank<=12?'senbatsu':rank<=24?'under':rank<=36?'next':'
 const tiers=[{key:'senbatsu',label:'Senbatsu · 1–12'},{key:'under',label:'Under Girls · 13–24'},{key:'next',label:'Next Girls · 25–36'},{key:'outside',label:'ไม่ติดอันดับ · 37+'}];
 type Row={name:string;rank:number;amount:string;votedAmount:string;todayAmount:string;heldAmount:string;bnkAmount:string;bestRank:number;worstRank:number};
 const displayVotes=(value:string)=>{const cents=(units(value)+5n*10n**15n)/(10n**16n);return `${(cents/100n).toLocaleString('en-US')}.${(cents%100n).toString().padStart(2,'0')}`;};
+const formatSyncTime=(timestamp:number)=>Number.isFinite(timestamp)?new Date(timestamp).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'}):'ไม่ทราบเวลา';
 
 export default async function Page({searchParams}:{searchParams:Promise<{includeHoldings?:string;mode?:string}>}){
   const params=await searchParams;
@@ -32,7 +33,13 @@ async function RankingContent({mode}:{mode:RankingMode}){
   let data;
   try {data=await ge6CurrentRanking(mode);} catch(error) {console.error(error);}
   return !data?<p className="error" role="alert">ยังโหลดอันดับไม่ได้ กรุณาลองใหม่อีกครั้ง</p>:<>
-      {(()=>{const timestamps=[data.voteSyncedAt,...(includeHoldings?[data.ge6HoldersAt]:[]),...(mode==='all'?[data.bnkHoldersAt]:[])].filter((value):value is string=>Boolean(value));const oldest=timestamps.length?Math.min(...timestamps.map(value=>Date.parse(value))):NaN;const stale=data.syncError||timestamps.length<(mode==='votes'?1:mode==='ge6'?2:3)||!Number.isFinite(oldest)||Date.now()-oldest>20*60*1000;return <p className={stale?'forecast-freshness stale':'forecast-freshness'}>ข้อมูลล่าสุด {Number.isFinite(oldest)?new Date(oldest).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'}):'ไม่ทราบเวลา'}{stale?' · ข้อมูลอาจล่าช้า':''}</p>;})()}
+      {(()=>{
+        const voteAt=data.voteSyncedAt?Date.parse(data.voteSyncedAt):NaN;
+        const heldSources=includeHoldings?[data.ge6HoldersAt,...(mode==='all'?[data.bnkHoldersAt]:[])]:[];
+        const heldAt=heldSources.length&&heldSources.every(Boolean)?Math.min(...heldSources.map(value=>Date.parse(value!))):NaN;
+        const stale=data.syncError||!Number.isFinite(voteAt)||Date.now()-voteAt>20*60*1000||(includeHoldings&&(!Number.isFinite(heldAt)||Date.now()-heldAt>40*60*1000));
+        return <p className={stale?'forecast-freshness stale':'forecast-freshness'}>โหวตล่าสุด {formatSyncTime(voteAt)}{includeHoldings&&<> · เหรียญคงเหลือ {formatSyncTime(heldAt)}</>}{stale?' · ข้อมูลอาจล่าช้า':''}</p>;
+      })()}
       {(()=>{const nammonn=data.rows.find((row:{name:string;amount:string})=>row.name==='Nammonn');const estimated=Number(nammonn?.amount??0);const remaining=Math.max(0,20000-estimated);return <section className="forecast-goal" aria-label="เป้าหมายคะแนน Nammonn"><div className="forecast-goal-label"><span aria-hidden="true">◎</span> Token รวมของ Nammonn BNK48 โดยประมาณ</div><div className="forecast-estimate">≈ {Math.round(estimated).toLocaleString('en-US')} <span>Token</span></div><div className="forecast-targets"><div><strong>20,000</strong><span>เป้าหมาย</span></div><div><strong>{Math.ceil(remaining).toLocaleString('en-US')}</strong><span>ขาดอีก</span></div></div></section>;})()}
       <div className="rank-heading"><h2 className="rank-title">ประมาณอันดับ GE6 ปัจจุบัน</h2><div className="rank-summary" aria-label="ยอดโหวต GE6 รวมถึงผลด่วน"><div><span>โหวตรวมตอนนี้</span><strong>{displayVotes(data.votedTotal)}</strong></div><div title="คะแนนผลด่วนที่ประกาศรายเมมเบอร์ และโหวตหลังผลด่วนที่คาดผู้รับได้"><span>Track ได้</span><strong>{displayVotes(data.trackedTotal)}</strong></div><div title="คะแนนผลด่วนที่ยังไม่เปิดเผยผู้รับ และโหวตหลังผลด่วนที่ยังคาดผู้รับไม่ได้"><span>Track ไม่ได้</span><strong>{displayVotes(data.untrackedTotal)}</strong></div></div></div>
       <div className={includeHoldings?'rank-cards-head':'rank-cards-head rank-card-single'} aria-hidden="true"><span>#</span><span>ชื่อ</span><span>คาดจากโหวต</span>{includeHoldings&&<span>{mode==='all'?'รวมทั้งหมด':'รวมที่ถือ'}</span>}</div>
