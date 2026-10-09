@@ -17,8 +17,9 @@ export async function POST(request:Request){
   const checkpoint=(await db.execute({sql:'SELECT value FROM metadata WHERE key=?',args:['ge6Checkpoint']})).rows[0];
   if(!checkpoint)return Response.json({error:'ฐานข้อมูลยังไม่ได้สแกนครั้งแรก กรุณารอการซิงก์ตามรอบ'},{status:503});
   const previous=(await db.execute({sql:'SELECT value FROM metadata WHERE key=?',args:['ge6Status']})).rows[0];
-  const lastSuccess=JSON.parse(String(previous?.value??'null'))?.lastSuccess as string|undefined;
-  if(lastSuccess&&Date.now()-Date.parse(lastSuccess)<30000)return Response.json({lastSuccess,recent:true},{headers:{'Cache-Control':'no-store'}});
+  const currentStatus=JSON.parse(String(previous?.value??'null')) as {lastSuccess?:string;votes?:number;phase?:string}|null;
+  const lastSuccess=currentStatus?.lastSuccess;
+  if(currentStatus?.phase!=='error'&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<15000)return Response.json({lastSuccess,votes:currentStatus?.votes,recent:true},{headers:{'Cache-Control':'no-store'}});
   const owner=randomUUID();
   const now=Date.now();
   // One short on-demand pass at a time. A failed or timed-out request can retry after the lease expires.
