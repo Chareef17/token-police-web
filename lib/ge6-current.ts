@@ -1,7 +1,7 @@
 import { database } from './db';
 import { units, amount } from './amount.mjs';
 import { ge6CandidateByName, ge6CandidateNames } from './ge6-candidates';
-import { makeRanking, snapshotTotal, splitVote } from './ge6-current-model.mjs';
+import { makeRanking, snapshotTotal, splitVote, partitionVoteEvents } from './ge6-current-model.mjs';
 import { ge6HeldBalances, bnkHeldBalances } from './ge6-held-balances';
 
 // 'votes': votes cast since the preliminary result; 'ge6': plus GE6 still held by those wallets;
@@ -28,29 +28,10 @@ async function calculateRanking(mode:RankingMode='votes') {
   ],'read');
   const votes=voteResult.rows;
   const assignments=new Map(assignmentResult.rows.map(row=>[String(row.tx_hash)+':'+String(row.log_index),ge6CandidateByName.get(String(row.member).toLowerCase())]));
-  const wallets = new Map<string,bigint>();
-  const predictedWallets = new Map<string,bigint>();
-  const todayWallets = new Map<string,bigint>();
-  const assignedVotes:{address:string;member:string;value:bigint;today:boolean}[]=[];
-  let lastVoteAt: string | null = null;
   // Bangkok is UTC+7 year-round. Compare against midnight today in Bangkok.
   const bangkokOffsetMs=7*60*60*1000;
   const todayStartUtc=Math.floor((Date.now()+bangkokOffsetMs)/86400000)*86400000-bangkokOffsetMs;
-  for (const row of votes) {
-    const address = String(row.address).toLowerCase();
-    if (!addressPattern.test(address)) continue;
-    const voteAmount=units(String(row.amount));
-    wallets.set(address,(wallets.get(address)??0n)+voteAmount);
-    const at = String(row.voted_at);
-    const today=Date.parse(at)>=todayStartUtc;
-    const assigned=assignments.get(String(row.tx_hash)+':'+String(row.log_index));
-    if(assigned)assignedVotes.push({address,member:assigned,value:voteAmount,today});
-    else{
-      predictedWallets.set(address,(predictedWallets.get(address)??0n)+voteAmount);
-      if(today)todayWallets.set(address,(todayWallets.get(address)??0n)+voteAmount);
-    }
-    if (!lastVoteAt || Date.parse(at)>Date.parse(lastVoteAt)) lastVoteAt=at;
-  }
+  const {wallets,predictedWallets,todayWallets,assignedVotes,lastVoteAt}=partitionVoteEvents(votes,assignments,todayStartUtc);
   const heldBalances=await heldPromise;
   const addresses = [...new Set([...wallets.keys(),...heldBalances.keys()])];
   const bnkBalances=mode==='all'?await bnkHeldBalances(addresses):new Map<string,bigint>();

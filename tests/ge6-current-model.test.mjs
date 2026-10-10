@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { splitVote, makeRanking, snapshotTotal } from '../lib/ge6-current-model.mjs';
+import { splitVote, makeRanking, snapshotTotal, partitionVoteEvents } from '../lib/ge6-current-model.mjs';
 import { units } from '../lib/amount.mjs';
 import preliminary from '../lib/ge6-prelim-2026-10-03.json' with {type:'json'};
 
@@ -8,6 +8,23 @@ test('splits exact token units without losing remainder',()=>{
   assert.deepEqual(splitVote(101n,['A','B']),[['A',71n],['B',30n]]);
   assert.deepEqual(splitVote(103n,['A','B','C']),[['A',62n],['B',31n],['C',10n]]);
   assert.deepEqual(splitVote(17n,['A']),[['A',17n]]);
+});
+
+test('manual transaction assignment moves its full amount away from predicted members and Clear restores the split',()=>{
+  const address='0x'+'a'.repeat(40);
+  const votes=[
+    {tx_hash:'tx1',log_index:0,address,amount:'100',voted_at:'2026-10-10T10:00:00.000Z'},
+    {tx_hash:'tx2',log_index:0,address,amount:'100',voted_at:'2026-10-10T10:01:00.000Z'},
+  ];
+  const scores=assignments=>{
+    const {predictedWallets,assignedVotes}=partitionVoteEvents(votes,assignments,0);
+    const totals=new Map(splitVote(predictedWallets.get(address)??0n,['A','B']));
+    for(const vote of assignedVotes)totals.set(vote.member,(totals.get(vote.member)??0n)+vote.value);
+    return [...totals].map(([member,value])=>[member,value/10n**18n]);
+  };
+  assert.deepEqual(scores(new Map()),[['A',140n],['B',60n]]);
+  assert.deepEqual(scores(new Map([['tx1:0','C']])),[['A',70n],['B',30n],['C',100n]]);
+  assert.deepEqual(scores(new Map([['tx1:0',undefined]])),[['A',140n],['B',60n]]);
 });
 
 test('preliminary snapshot and neutral unpublished scores conserve the on-chain total',()=>{
