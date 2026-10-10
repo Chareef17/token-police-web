@@ -12,7 +12,7 @@ const iconPaths={
   live:<><path d="M3 12h3l2-5 4 10 2-5h7"/><circle cx="19" cy="5" r="2"/></>,
 };
 type IconName=keyof typeof iconPaths;
-const links:{href:string;label:string;icon:IconName}[]=[{href:'/',label:'Main Page',icon:'home'},{href:'/ge6-current',label:'คาดการณ์คะแนน',icon:'forecast'},{href:'/ge6-voters',label:'Top Voter',icon:'trophy'},{href:'/ge6-live',label:'โหวตสด',icon:'live'},{href:'/nammonn',label:'สายเปย์น้ำมนต์',icon:'heart'},{href:'/ge6-holders',label:'ผู้ถือ GE6',icon:'wallet'}];
+const links:{href:string;label:string;icon:IconName}[]=[{href:'/',label:'Main Page',icon:'home'},{href:'/ge6-current',label:'คาดการณ์คะแนน',icon:'forecast'},{href:'/ge6-voters',label:'Top Voter',icon:'trophy'},{href:'/ge6-live',label:'โหวต',icon:'live'},{href:'/nammonn',label:'สายเปย์น้ำมนต์',icon:'heart'},{href:'/ge6-holders',label:'ผู้ถือ GE6',icon:'wallet'}];
 function NavIcon({name}:{name:IconName}){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" focusable="false">{iconPaths[name]}</svg>}
 export default function SiteHeader(){
   const pathname=usePathname();
