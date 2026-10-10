@@ -469,6 +469,7 @@ a.member-avatar-item:focus-visible{outline:2px solid var(--accent);outline-offse
 .live-filter-panel .live-custom-filter>label{flex:none;min-width:0;color:var(--text);font-size:12px;font-weight:700}
 .live-filter-panel .live-custom-filter .live-threshold-input{flex:1}
 .live-filter-panel .live-custom-filter input{width:115px;text-align:left}
+.live-filter-panel .live-custom-filter input::placeholder{font-weight:400;color:var(--muted);opacity:.8}
 .live-filter-panel .live-custom-filter button{flex:none}
 .live-slider-filter{padding-top:12px}.live-slider-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted)}.live-slider-heading strong{color:var(--text);font-variant-numeric:tabular-nums}.live-slider-heading .text-button{font-size:11px}
 @media(max-width:760px){.live-filter-panel{padding:12px 14px}.live-filter-panel .live-custom-filter{gap:7px}.live-filter-panel .live-custom-filter>label{font-size:11px}.live-filter-panel .live-custom-filter input{width:75px}.live-filter-panel .live-custom-filter button{padding:7px 9px;font-size:11px}}

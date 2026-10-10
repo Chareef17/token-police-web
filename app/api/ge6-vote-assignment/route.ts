@@ -42,7 +42,9 @@ export async function POST(request:Request){
     await tx.batch([
       {sql:'DELETE FROM limits WHERE started<?',args:[now-60000]},
       {sql:'INSERT OR REPLACE INTO limits VALUES(?,?,?)',args:[key,active?Number(limit!.started):now,active?Number(limit!.count)+1:1]},
-      {sql:'INSERT OR REPLACE INTO ge6_vote_assignments VALUES(?,?,?,?,?)',args:[txHash,logIndex,member,nextVersion,updatedAt]},
+      // Older hosted databases keep this column NOT NULL. An empty value means
+      // "no manual assignment" while preserving the optimistic-lock version.
+      {sql:'INSERT OR REPLACE INTO ge6_vote_assignments VALUES(?,?,?,?,?)',args:[txHash,logIndex,member??'',nextVersion,updatedAt]},
       {sql:"INSERT INTO metadata(key,value) VALUES('ge6AssignmentRevision','1') ON CONFLICT(key) DO UPDATE SET value=CAST(value AS INTEGER)+1",args:[]},
     ]);
     await tx.commit();

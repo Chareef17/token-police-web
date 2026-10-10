@@ -40,7 +40,7 @@ export async function ge6Live(page=1,tier:VoteTier|null=null,min:string|null=nul
   const current=Math.min(Math.max(1,page),pages);
   const events=(await db.execute({sql:`SELECT tx_hash,log_index,address,amount,voted_at FROM ge6_events WHERE ${condition} ORDER BY block_number DESC,log_index DESC LIMIT ? OFFSET ?`,args:[...args,PAGE_SIZE,(current-1)*PAGE_SIZE]})).rows;
   const assignments=events.length?(await db.execute({sql:`SELECT tx_hash,log_index,member,version FROM ge6_vote_assignments WHERE tx_hash IN (${events.map(()=>'?').join(',')})`,args:events.map(row=>String(row.tx_hash))})).rows:[];
-  const assignedByEvent=new Map(assignments.map(row=>[String(row.tx_hash)+':'+String(row.log_index),{member:row.member==null?null:String(row.member),version:Number(row.version)}]));
+  const assignedByEvent=new Map(assignments.map(row=>[String(row.tx_hash)+':'+String(row.log_index),{member:row.member?String(row.member):null,version:Number(row.version)}]));
   const addresses=[...new Set(events.map(row=>String(row.address).toLowerCase()))];
   const details=await voterDetails(addresses);
   let chainVoteCount:number|null=null;
