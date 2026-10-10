@@ -22,12 +22,21 @@ async function calculateRanking(mode:RankingMode='votes') {
   const ge6Status: {lastSuccess?:string;phase?:string;votes?:number}|null = JSON.parse(freshness.ge6Status??'null');
   const ge6HoldersAt: string|null = freshness.ge6HoldersAt?JSON.parse(freshness.ge6HoldersAt):null;
   const bnkHoldersAt: string|null = freshness.bnkHoldersAt?JSON.parse(freshness.bnkHoldersAt):null;
-  const [voteResult,assignmentResult]=await db.batch([
+  const [voteResult,assignmentResult,preliminaryAssignmentResult]=await db.batch([
     {sql:'SELECT tx_hash,log_index,address,amount,voted_at FROM ge6_events WHERE julianday(voted_at)>julianday(?)',args:[preliminary.cutoff]},
     {sql:'SELECT a.tx_hash,a.log_index,a.member FROM ge6_vote_assignments a JOIN ge6_events e ON e.tx_hash=a.tx_hash AND e.log_index=a.log_index WHERE julianday(e.voted_at)>julianday(?)',args:[preliminary.cutoff]},
+    {sql:"SELECT a.member,e.amount FROM ge6_vote_assignments a JOIN ge6_events e ON e.tx_hash=a.tx_hash AND e.log_index=a.log_index WHERE julianday(e.voted_at)<=julianday(?) AND a.member<>''",args:[preliminary.cutoff]},
   ],'read');
   const votes=voteResult.rows;
   const assignments=new Map(assignmentResult.rows.map(row=>[String(row.tx_hash)+':'+String(row.log_index),ge6CandidateByName.get(String(row.member).toLowerCase())]));
+  const publishedNames=new Set((preliminary.results as [string,string][]).map(([name])=>name));
+  const preliminaryAssignments=new Map<string,bigint>();
+  for(const row of preliminaryAssignmentResult.rows){
+    const member=ge6CandidateByName.get(String(row.member).toLowerCase());
+    if(!member||publishedNames.has(member))continue;
+    preliminaryAssignments.set(member,(preliminaryAssignments.get(member)??0n)+units(String(row.amount)));
+  }
+  const identifiedPreliminary=[...preliminaryAssignments.values()].reduce((total,value)=>total+value,0n);
   // Bangkok is UTC+7 year-round. Compare against midnight today in Bangkok.
   const bangkokOffsetMs=7*60*60*1000;
   const todayStartUtc=Math.floor((Date.now()+bangkokOffsetMs)/86400000)*86400000-bangkokOffsetMs;
@@ -110,13 +119,13 @@ async function calculateRanking(mode:RankingMode='votes') {
   }
   const combined=new Map(additions);
   for(const extra of [heldAdditions,bnkAdditions])for(const [name,share] of extra)combined.set(name,(combined.get(name)??0n)+share);
-  const votedRows=makeRanking([...ge6CandidateNames],preliminary.results as [string,string][],additions);
+  const votedRows=makeRanking([...ge6CandidateNames],preliminary.results as [string,string][],additions,preliminaryAssignments);
   const votedByName=new Map(votedRows.map((row:{name:string;amount:string})=>[row.name,row.amount]));
-  const rows=makeRanking([...ge6CandidateNames],preliminary.results as [string,string][],combined)
+  const rows=makeRanking([...ge6CandidateNames],preliminary.results as [string,string][],combined,preliminaryAssignments)
     .map((row:{name:string;amount:string})=>({...row,votedAmount:votedByName.get(row.name)!,todayAmount:amount(todayAdditions.get(row.name)??0n),heldAmount:amount(heldAdditions.get(row.name)??0n),bnkAmount:amount(bnkAdditions.get(row.name)??0n)}));
   const publishedTotal=(preliminary.results as [string,string][]).reduce((total,[,score])=>total+units(score),0n);
-  const trackedTotal=publishedTotal+allocated;
-  const untrackedTotal=(snapshotTotal-publishedTotal)+unassigned;
+  const trackedTotal=publishedTotal+identifiedPreliminary+allocated;
+  const untrackedTotal=(snapshotTotal-publishedTotal-identifiedPreliminary)+unassigned;
   const votedTotal=snapshotTotal+allocated+unassigned;
   if(trackedTotal+untrackedTotal!==votedTotal)throw new Error('GE6 vote totals do not reconcile');
   return {rows,mode,includeHoldings,contributions,additions,heldAdditions,

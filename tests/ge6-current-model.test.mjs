@@ -39,6 +39,19 @@ test('preliminary snapshot and neutral unpublished scores conserve the on-chain 
   assert.equal(official.size,36);
 });
 
+test('preliminary assignments only redistribute unpublished scores without double counting',()=>{
+  const candidates=[...preliminary.results.map(([name])=>name),...Array.from({length:22},(_,i)=>`Unpublished ${i}`)];
+  const base=makeRanking(candidates,preliminary.results,new Map());
+  const identified=makeRanking(candidates,preliminary.results,new Map(),new Map([['Unpublished 0',units('100')],['Rose',units('50')]]));
+  const cleared=makeRanking(candidates,preliminary.results,new Map(),new Map());
+  const score=(rows,name)=>units(rows.find(row=>row.name===name).amount);
+  assert.equal(score(identified,'Rose'),score(base,'Rose'));
+  assert.ok(score(identified,'Unpublished 0')>score(base,'Unpublished 0'));
+  assert.ok(score(identified,'Unpublished 1')<score(base,'Unpublished 1'));
+  assert.equal(identified.reduce((sum,row)=>sum+units(row.amount),0n),snapshotTotal);
+  assert.equal(score(cleared,'Unpublished 0'),score(base,'Unpublished 0'));
+});
+
 test('adding projected held tokens changes the ranking and total without changing the vote-only amount',()=>{
   const candidates=[...preliminary.results.map(([name])=>name),'Unpublished'];
   const voted=makeRanking(candidates,preliminary.results,new Map());
