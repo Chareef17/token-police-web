@@ -8,11 +8,11 @@ import { refreshEvent } from '@/lib/client-cache';
 
 type Row={txHash:string;logIndex:number;address:string;name:string|null;amount:string;votedAt:string|null;tier:VoteTier;voted:string;bnk:string|null;ge6:string|null;lastTxAt:string|null;likely:string[];topVote:string|null};
 type Feed={rows:Row[];page:number;pages:number;total:number;tier:VoteTier|null;chainVoteCount:number|null;fetchedAt:string};
-const tierLabels:Record<VoteTier,string>={tier1:'100–500',tier2:'501–1,000',tier3:'1,001–3,000',tier4:'3,001–9,998',tier5:'9,999+'};
+const tierLabels:Record<VoteTier,string>={tier1:'100–500',tier2:'501–1,000',tier3:'1,001–2,999',tier4:'3,000–5,000',tier5:'5,001–9,999',tier6:'10,000+'};
 const tiers=Object.keys(tierLabels) as VoteTier[];
 const date=(value:string|null)=>value?new Date(value).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 const pageFromUrl=()=>{if(typeof window==='undefined')return 1;const raw=new URLSearchParams(window.location.search).get('page');return raw&&/^[1-9]\d{0,5}$/.test(raw)?Number(raw):1;};
-const tierFromUrl=():VoteTier|null=>{if(typeof window==='undefined')return null;const raw=new URLSearchParams(window.location.search).get('tier');return raw&&/^tier[1-5]$/.test(raw)?raw as VoteTier:null;};
+const tierFromUrl=():VoteTier|null=>{if(typeof window==='undefined')return null;const raw=new URLSearchParams(window.location.search).get('tier');return raw&&/^tier[1-6]$/.test(raw)?raw as VoteTier:null;};
 
 export default function Ge6LiveTable(){
   const [page,setPage]=useState(pageFromUrl);

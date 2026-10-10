@@ -3,23 +3,25 @@ import { amount, units } from './amount.mjs';
 import { voterDetails } from './ge6-voters';
 
 const PAGE_SIZE=20;
-export type VoteTier='tier1'|'tier2'|'tier3'|'tier4'|'tier5';
+export type VoteTier='tier1'|'tier2'|'tier3'|'tier4'|'tier5'|'tier6';
 export function voteTier(raw:string):VoteTier|null{
   const value=units(raw);
   if(value<units('100'))return null;
   if(value<=units('500'))return 'tier1';
   if(value<=units('1000'))return 'tier2';
-  if(value<=units('3000'))return 'tier3';
-  if(value<units('9999'))return 'tier4';
-  return 'tier5';
+  if(value<units('3000'))return 'tier3';
+  if(value<=units('5000'))return 'tier4';
+  if(value<units('10000'))return 'tier5';
+  return 'tier6';
 }
 
 const tierConditions:Record<VoteTier,string>={
   tier1:'CAST(amount AS REAL)>=100 AND CAST(amount AS REAL)<=500',
   tier2:'CAST(amount AS REAL)>500 AND CAST(amount AS REAL)<=1000',
-  tier3:'CAST(amount AS REAL)>1000 AND CAST(amount AS REAL)<=3000',
-  tier4:'CAST(amount AS REAL)>3000 AND CAST(amount AS REAL)<9999',
-  tier5:'CAST(amount AS REAL)>=9999',
+  tier3:'CAST(amount AS REAL)>1000 AND CAST(amount AS REAL)<3000',
+  tier4:'CAST(amount AS REAL)>=3000 AND CAST(amount AS REAL)<=5000',
+  tier5:'CAST(amount AS REAL)>5000 AND CAST(amount AS REAL)<10000',
+  tier6:'CAST(amount AS REAL)>=10000',
 };
 
 export async function ge6Live(page=1,tier:VoteTier|null=null){
