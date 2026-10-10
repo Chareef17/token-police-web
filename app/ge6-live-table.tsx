@@ -2,7 +2,7 @@
 import { useEffect,useRef,useState } from 'react';
 import { displayShort } from '@/lib/amount.mjs';
 import type { VoteTier } from '@/lib/ge6-live';
-import { ge6CandidateNames } from '@/lib/ge6-candidates';
+import Ge6AssignmentDialog from './ge6-assignment-dialog';
 import AddressCopy from './address-copy';
 import MemberAvatars from './member-avatars';
 import { refreshEvent } from '@/lib/client-cache';
@@ -26,9 +26,6 @@ export default function Ge6LiveTable(){
   const [draftExact,setDraftExact]=useState(()=>exactFromUrl()??'');
   const [filterError,setFilterError]=useState('');
   const [editing,setEditing]=useState<Row|null>(null);
-  const [selectedMember,setSelectedMember]=useState('');
-  const [saveError,setSaveError]=useState('');
-  const [saving,setSaving]=useState(false);
   const [retry,setRetry]=useState(0);
   const [data,setData]=useState<Feed|null>(null);
   const [loading,setLoading]=useState(true);
@@ -47,8 +44,6 @@ export default function Ge6LiveTable(){
   const clearFilters=()=>{const url=new URL(window.location.href);for(const key of ['page','min','max','exact','tier'])url.searchParams.delete(key);window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);setPage(1);setThreshold(null);setSliderDraft('0');setExact(null);setDraftExact('');setFilterError('');};
   const applyThreshold=(raw:string)=>{const value=raw.trim();if(!validThreshold(value)){setFilterError('เลือกยอดขั้นต่ำ 0–10,000');return;}const url=new URL(window.location.href);url.searchParams.delete('tier');url.searchParams.delete('page');url.searchParams.delete('max');url.searchParams.delete('exact');if(Number(value)>0)url.searchParams.set('min',value);else url.searchParams.delete('min');window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);setPage(1);setThreshold(Number(value)>0?value:null);setSliderDraft(value);setExact(null);setDraftExact('');setFilterError('');};
   const applyCustom=(event:React.FormEvent<HTMLFormElement>)=>{event.preventDefault();const value=draftExact.trim();if(!validAmount(value)){setFilterError('กรอกยอดโหวตที่ต้องการค้นหา');return;}const url=new URL(window.location.href);url.searchParams.delete('tier');url.searchParams.delete('page');url.searchParams.delete('min');url.searchParams.delete('max');url.searchParams.set('exact',value);window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);setPage(1);setThreshold(null);setSliderDraft('0');setExact(value);setFilterError('');};
-  const openAssignment=(row:Row)=>{setEditing(row);setSelectedMember(row.assignedMember??'');setSaveError('');};
-  const saveAssignment=async(member:string|null)=>{if(!editing)return;setSaving(true);setSaveError('');try{const response=await fetch('/api/ge6-vote-assignment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({txHash:editing.txHash,logIndex:editing.logIndex,member,version:editing.assignmentVersion})});const result=await response.json() as {error?:string;member?:string|null;version?:number};if(!response.ok)throw new Error(result.error??'บันทึกไม่สำเร็จ');setData(current=>current?{...current,rows:current.rows.map(row=>row.txHash===editing.txHash&&row.logIndex===editing.logIndex?{...row,assignedMember:result.member??null,assignmentVersion:result.version??0}:row)}:current);setEditing(null);}catch(error){setSaveError(error instanceof Error?error.message:'บันทึกไม่สำเร็จ');}finally{setSaving(false);}};
   useEffect(()=>{
     const controller=new AbortController();
     setLoading(true);setError('');
@@ -98,11 +93,11 @@ export default function Ge6LiveTable(){
           <td className="num" data-label="GE6 ถืออยู่"><a href={href}>{row.ge6===null?'—':displayShort(row.ge6)}</a></td>
           <td className="num" data-label="BNK ถืออยู่"><a href={href}>{row.bnk===null?'—':displayShort(row.bnk)}</a></td>
           <td className="vote-hint" data-label="น่าจะโหวตใคร">{row.likely.length?<MemberAvatars names={row.likely}/>:<a href={href}>—</a>}</td>
-          <td className="live-assignment" data-label="ผู้รับโหวต"><button type="button" onClick={()=>openAssignment(row)}>{row.assignedMember?`${row.assignedMember} · แก้ไข`:'เลือกเมมเบอร์'}</button></td>
+          <td className="live-assignment" data-label="ผู้รับโหวต"><button type="button" onClick={()=>setEditing(row)}>{row.assignedMember?`${row.assignedMember} · แก้ไข`:'เลือกเมมเบอร์'}</button></td>
           <td className="live-transaction" data-label="เวลา / Tx"><time dateTime={row.votedAt??undefined}>{date(row.votedAt)}</time><a href={'https://scan.tokenx.finance/tx/'+row.txHash} target="_blank" rel="noopener noreferrer" aria-label={'ดูธุรกรรม '+row.txHash}>ดู Tx ↗</a></td>
         </tr>;})}</tbody></table></div>}
       <div className="voters-pagination"><span>ทั้งหมด {data.total.toLocaleString()} รายการ · หน้า {data.page}/{data.pages}</span><div><button className="secondary" disabled={page<=1} onClick={()=>changePage(page-1)}>ก่อนหน้า</button><button className="secondary" disabled={page>=data.pages} onClick={()=>changePage(page+1)}>ถัดไป</button></div></div>
     </>}
-    {editing&&<div className="live-assignment-overlay" onMouseDown={event=>{if(event.target===event.currentTarget&&!saving)setEditing(null);}}><div className="live-assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="assignment-title"><h2 id="assignment-title">ระบุผู้รับโหวต</h2><div className="live-assignment-summary"><strong>{displayShort(editing.amount)} GE6</strong><span>{editing.name??'ไม่มีชื่อกระเป๋า'}</span><code>{editing.address}</code><small>Tx {editing.txHash.slice(0,10)}…{editing.txHash.slice(-8)}</small></div>{editing.inPreliminary&&<p className="live-assignment-note">Tx ก่อนผลด่วนอยู่ในคะแนนผลด่วนแล้ว จึงไม่บวกซ้ำ</p>}<label htmlFor="assignment-member">เมมเบอร์</label><select id="assignment-member" value={selectedMember} onChange={event=>setSelectedMember(event.target.value)}><option value="" disabled>เลือกเมมเบอร์</option>{ge6CandidateNames.map(name=><option key={name} value={name}>{name}</option>)}</select>{saveError&&<p className="error" role="alert">{saveError}</p>}<div className="live-assignment-actions">{editing.assignedMember&&<button type="button" className="secondary" disabled={saving} onClick={()=>{setSelectedMember('');void saveAssignment(null);}}>Clear</button>}<button type="button" className="secondary" disabled={saving} onClick={()=>setEditing(null)}>ยกเลิก</button><button type="button" disabled={saving||!selectedMember} onClick={()=>saveAssignment(selectedMember)}>{saving?'กำลังบันทึก…':'บันทึก'}</button></div></div></div>}
+    {editing&&<Ge6AssignmentDialog key={editing.txHash+':'+editing.logIndex} vote={editing} onClose={()=>setEditing(null)} onSaved={(member,version)=>setData(current=>current?{...current,rows:current.rows.map(row=>row.txHash===editing.txHash&&row.logIndex===editing.logIndex?{...row,assignedMember:member,assignmentVersion:version}:row)}:current)}/>}
   </section>;
 }
