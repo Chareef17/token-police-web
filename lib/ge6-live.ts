@@ -1,5 +1,5 @@
 import { database } from './db';
-import { amount, units } from './amount.mjs';
+import { units } from './amount.mjs';
 import { voterDetails } from './ge6-voters';
 
 const PAGE_SIZE=20;
@@ -37,15 +37,9 @@ export async function ge6Live(page=1,tier:VoteTier|null=null){
   const events=(await db.execute({sql:`SELECT tx_hash,log_index,address,amount,voted_at FROM ge6_events WHERE ${condition} ORDER BY block_number DESC,log_index DESC LIMIT ? OFFSET ?`,args:[PAGE_SIZE,(current-1)*PAGE_SIZE]})).rows;
   const addresses=[...new Set(events.map(row=>String(row.address).toLowerCase()))];
   const details=await voterDetails(addresses);
-  const totals=new Map<string,bigint>();
-  if(addresses.length){
-    const placeholders=addresses.map(()=>'?').join(',');
-    const rows=(await db.execute({sql:`SELECT address,amount FROM ge6_events WHERE address IN (${placeholders})`,args:addresses})).rows;
-    for(const row of rows){const address=String(row.address).toLowerCase();totals.set(address,(totals.get(address)??0n)+units(String(row.amount)));}
-  }
   let chainVoteCount:number|null=null;
   try{const status=JSON.parse(String(statusResult.rows[0]?.value??'null')) as {votes?:number}|null;if(typeof status?.votes==='number')chainVoteCount=status.votes;}catch{}
   return {rows:events.map(row=>{const address=String(row.address).toLowerCase();return {
-    txHash:String(row.tx_hash),logIndex:Number(row.log_index),address,amount:String(row.amount),votedAt:row.voted_at==null?null:String(row.voted_at),tier:voteTier(String(row.amount)),voted:amount(totals.get(address)??0n),...details.get(address)!,
+    txHash:String(row.tx_hash),logIndex:Number(row.log_index),address,amount:String(row.amount),votedAt:row.voted_at==null?null:String(row.voted_at),tier:voteTier(String(row.amount)),...details.get(address)!,
   };}),page:current,pages,total,tier,chainVoteCount,fetchedAt:new Date().toISOString()};
 }

@@ -6,7 +6,7 @@ import AddressCopy from './address-copy';
 import MemberAvatars from './member-avatars';
 import { refreshEvent } from '@/lib/client-cache';
 
-type Row={txHash:string;logIndex:number;address:string;name:string|null;amount:string;votedAt:string|null;tier:VoteTier;voted:string;bnk:string|null;ge6:string|null;lastTxAt:string|null;likely:string[];topVote:string|null};
+type Row={txHash:string;logIndex:number;address:string;name:string|null;amount:string;votedAt:string|null;tier:VoteTier;bnk:string|null;ge6:string|null;likely:string[]};
 type Feed={rows:Row[];page:number;pages:number;total:number;tier:VoteTier|null;chainVoteCount:number|null;fetchedAt:string};
 const tierLabels:Record<VoteTier,string>={tier1:'100–500',tier2:'501–1,000',tier3:'1,001–2,999',tier4:'3,000–5,000',tier5:'5,001–9,999',tier6:'10,000+'};
 const tiers=Object.keys(tierLabels) as VoteTier[];
@@ -70,16 +70,14 @@ export default function Ge6LiveTable(){
     <div className="live-tier-filters" role="group" aria-label="กรองตามยอดโหวต"><button type="button" className={!tier?'active':''} aria-pressed={!tier} onClick={()=>changeTier(null)}>ทั้งหมด</button>{tiers.map(value=><button type="button" key={value} className={'live-tier '+value+(tier===value?' active':'')} aria-pressed={tier===value} onClick={()=>changeTier(value)}>{tierLabels[value]}</button>)}</div>
     {loading?<div className="loading-panel" role="status"><span className="spinner"/> กำลังโหลดโหวตล่าสุด…</div>:error?<p className="error" role="alert">{error} <button className="text-button" onClick={()=>setRetry(v=>v+1)}>ลองใหม่</button></p>:data&&<>
       {data.rows.length===0&&<p className="live-empty">ยังไม่มีรายการในช่วงนี้</p>}
-      {data.rows.length>0&&<div className="table-wrap responsive-card-table live-votes-table" tabIndex={0} aria-label="ตารางธุรกรรมโหวต GE6"><table><thead><tr><th>ระดับ</th><th>กระเป๋า</th><th className="num">โหวตครั้งนี้</th><th className="num">GE6 โหวตแล้ว</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint">น่าจะโหวตใคร</th><th className="vote-hint">เคยโหวตมากสุด</th><th>เวลา / Tx</th></tr></thead>
+      {data.rows.length>0&&<div className="table-wrap responsive-card-table live-votes-table" tabIndex={0} aria-label="ตารางธุรกรรมโหวต GE6"><table><thead><tr><th>ระดับ</th><th>กระเป๋า</th><th className="num">โหวตครั้งนี้</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint">น่าจะโหวตใคร</th><th>เวลา / Tx</th></tr></thead>
         <tbody>{data.rows.map(row=>{const href='/?address='+row.address;return <tr key={row.txHash+':'+row.logIndex} className={'live-row '+row.tier}>
           <td className="rank"><span className={'live-tier '+row.tier}>{tierLabels[row.tier]}</span></td>
           <td className="who"><div className="wallet-identity">{row.name&&<a href={href}><strong>{row.name}</strong></a>}<AddressCopy address={row.address} href={href}/></div></td>
           <td className="num live-amount" data-label="โหวตครั้งนี้"><strong>{displayShort(row.amount)}</strong></td>
-          <td className="num" data-label="GE6 โหวตแล้ว"><a href={href}>{displayShort(row.voted)}</a></td>
           <td className="num" data-label="GE6 ถืออยู่"><a href={href}>{row.ge6===null?'—':displayShort(row.ge6)}</a></td>
           <td className="num" data-label="BNK ถืออยู่"><a href={href}>{row.bnk===null?'—':displayShort(row.bnk)}</a></td>
           <td className="vote-hint" data-label="น่าจะโหวตใคร">{row.likely.length?<MemberAvatars names={row.likely}/>:<a href={href}>—</a>}</td>
-          <td className="vote-hint" data-label="เคยโหวตมากสุด"><a href={href}>{row.topVote??'—'}</a></td>
           <td className="live-transaction" data-label="เวลา / Tx"><time dateTime={row.votedAt??undefined}>{date(row.votedAt)}</time><a href={'https://scan.tokenx.finance/tx/'+row.txHash} target="_blank" rel="noopener noreferrer" aria-label={'ดูธุรกรรม '+row.txHash}>ดู Tx ↗</a></td>
         </tr>;})}</tbody></table></div>}
       <div className="voters-pagination"><span>ทั้งหมด {data.total.toLocaleString()} รายการ · หน้า {data.page}/{data.pages}</span><div><button className="secondary" disabled={page<=1} onClick={()=>changePage(page-1)}>ก่อนหน้า</button><button className="secondary" disabled={page>=data.pages} onClick={()=>changePage(page+1)}>ถัดไป</button></div></div>

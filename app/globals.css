@@ -431,6 +431,7 @@ a.member-avatar-item:focus-visible{outline:2px solid var(--accent);outline-offse
   .live-votes-board .responsive-card-table tbody td.live-amount[data-label]{position:absolute;top:17px;right:14px;display:flex;flex-direction:column;align-items:flex-end;width:112px;min-height:0;padding:0;border:0;text-align:right}
   .live-votes-board .responsive-card-table tbody td.live-amount[data-label]::before{font-size:10px}
   .live-votes-board .responsive-card-table tbody td.live-amount strong{font-size:23px;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums}
+  .live-votes-board .responsive-card-table tbody td.vote-hint[data-label]{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
 }
 /* Keep loading rings circular when a long label shares their flex row. */
 .spinner{display:block;flex:0 0 20px;min-width:20px;min-height:20px;aspect-ratio:1}
