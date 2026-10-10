@@ -26,10 +26,10 @@ const tierConditions:Record<VoteTier,string>={
   tier6:'CAST(amount AS REAL)>=10000',
 };
 
-export async function ge6Live(page=1,tier:VoteTier|null=null,min:string|null=null){
+export async function ge6Live(page=1,tier:VoteTier|null=null,min:string|null=null,exact:string|null=null){
   const db=await database();
-  const condition=min!==null?'CAST(amount AS REAL)>=?':tier?tierConditions[tier]:'CAST(amount AS REAL)>=0';
-  const args=min!==null?[Number(min)]:[];
+  const condition=exact!==null?'CAST(amount AS REAL)=?':min!==null?'CAST(amount AS REAL)>=?':tier?tierConditions[tier]:'CAST(amount AS REAL)>=0';
+  const args=exact!==null?[Number(exact)]:min!==null?[Number(min)]:[];
   const [countResult,statusResult,revisionResult]=await db.batch([
     {sql:`SELECT count(*) AS total FROM ge6_events WHERE ${condition}`,args},
     {sql:'SELECT value FROM metadata WHERE key=?',args:['ge6Status']},
@@ -47,5 +47,5 @@ export async function ge6Live(page=1,tier:VoteTier|null=null,min:string|null=nul
   try{const status=JSON.parse(String(statusResult.rows[0]?.value??'null')) as {votes?:number}|null;if(typeof status?.votes==='number')chainVoteCount=status.votes;}catch{}
   return {rows:events.map(row=>{const address=String(row.address).toLowerCase();return {
     txHash:String(row.tx_hash),logIndex:Number(row.log_index),address,amount:String(row.amount),votedAt:row.voted_at==null?null:String(row.voted_at),inPreliminary:row.voted_at!=null&&Date.parse(String(row.voted_at))<=Date.parse(preliminary.cutoff),tier:voteTier(String(row.amount)),assignedMember:assignedByEvent.get(String(row.tx_hash)+':'+String(row.log_index))?.member??null,assignmentVersion:assignedByEvent.get(String(row.tx_hash)+':'+String(row.log_index))?.version??0,...details.get(address)!,
-  };}),page:current,pages,total,tier,min,chainVoteCount,assignmentRevision:Number(revisionResult.rows[0]?.value??0),fetchedAt:new Date().toISOString()};
+  };}),page:current,pages,total,tier,min,exact,chainVoteCount,assignmentRevision:Number(revisionResult.rows[0]?.value??0),fetchedAt:new Date().toISOString()};
 }
