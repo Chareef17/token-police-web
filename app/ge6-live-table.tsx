@@ -9,22 +9,20 @@ import { refreshEvent } from '@/lib/client-cache';
 
 type Row={txHash:string;logIndex:number;address:string;name:string|null;amount:string;votedAt:string|null;inPreliminary:boolean;tier:VoteTier;bnk:string|null;ge6:string|null;likely:string[];assignedMember:string|null;assignmentVersion:number};
 type Feed={rows:Row[];page:number;pages:number;total:number;tier:VoteTier|null;chainVoteCount:number|null;assignmentRevision:number;fetchedAt:string};
-type Range={min:string|null;max:string|null};
-const tierLabels:Record<VoteTier,string>={tier1:'100–500',tier2:'501–1,000',tier3:'1,001–2,999',tier4:'3,000–5,000',tier5:'5,001–9,999',tier6:'10,000+'};
-const tiers=Object.keys(tierLabels) as VoteTier[];
+const tierLabels:Record<VoteTier,string>={tier0:'0–99',tier1:'100–500',tier2:'501–1,000',tier3:'1,001–2,999',tier4:'3,000–5,000',tier5:'5,001–9,999',tier6:'10,000+'};
+const tiers:VoteTier[]=['tier1','tier2','tier3','tier4','tier5','tier6'];
 const date=(value:string|null)=>value?new Date(value).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 const pageFromUrl=()=>{if(typeof window==='undefined')return 1;const raw=new URLSearchParams(window.location.search).get('page');return raw&&/^[1-9]\d{0,5}$/.test(raw)?Number(raw):1;};
 const tierFromUrl=():VoteTier|null=>{if(typeof window==='undefined')return null;const raw=new URLSearchParams(window.location.search).get('tier');return raw&&/^tier[1-6]$/.test(raw)?raw as VoteTier:null;};
-const rangeFromUrl=():Range|null=>{if(typeof window==='undefined')return null;const params=new URLSearchParams(window.location.search);const min=params.get('min'),max=params.get('max');return min!==null||max!==null?{min,max}:null;};
-const feedUrl=(page:number,tier:VoteTier|null,range:Range|null)=>{const params=new URLSearchParams({page:String(page)});if(range){if(range.min!==null)params.set('min',range.min);if(range.max!==null)params.set('max',range.max);}else if(tier)params.set('tier',tier);return '/api/ge6-live?'+params;};
-const validAmount=(value:string)=>/^(?:0|[1-9]\d{0,8})(?:\.\d{1,18})?$/.test(value);
+const thresholdFromUrl=():string|null=>{if(typeof window==='undefined')return null;return new URLSearchParams(window.location.search).get('min');};
+const feedUrl=(page:number,tier:VoteTier|null,threshold:string|null)=>{const params=new URLSearchParams({page:String(page)});if(threshold!==null)params.set('min',threshold);else if(tier)params.set('tier',tier);return '/api/ge6-live?'+params;};
+const validAmount=(value:string)=>/^(?:0|[1-9]\d{0,4})$/.test(value)&&Number(value)<=10000;
 
 export default function Ge6LiveTable(){
   const [page,setPage]=useState(pageFromUrl);
   const [tier,setTier]=useState<VoteTier|null>(tierFromUrl);
-  const [range,setRange]=useState<Range|null>(rangeFromUrl);
-  const [customMin,setCustomMin]=useState(()=>rangeFromUrl()?.min??'');
-  const [customMax,setCustomMax]=useState(()=>rangeFromUrl()?.max??'');
+  const [threshold,setThreshold]=useState<string|null>(thresholdFromUrl);
+  const [draftThreshold,setDraftThreshold]=useState(()=>thresholdFromUrl()??'0');
   const [filterError,setFilterError]=useState('');
   const [editing,setEditing]=useState<Row|null>(null);
   const [selectedMember,setSelectedMember]=useState('');
@@ -39,22 +37,23 @@ export default function Ge6LiveTable(){
   const revision=useRef<number|null>(null);
   const currentPage=useRef(page);
   const currentTier=useRef(tier);
-  const currentRange=useRef(range);
+  const currentThreshold=useRef(threshold);
   currentPage.current=page;
   currentTier.current=tier;
-  currentRange.current=range;
-  useEffect(()=>{const restore=()=>{const nextRange=rangeFromUrl();setPage(pageFromUrl());setTier(tierFromUrl());setRange(nextRange);setCustomMin(nextRange?.min??'');setCustomMax(nextRange?.max??'');};const reload=()=>setRetry(v=>v+1);restore();window.addEventListener('popstate',restore);window.addEventListener(refreshEvent,reload);return()=>{window.removeEventListener('popstate',restore);window.removeEventListener(refreshEvent,reload);};},[]);
+  currentThreshold.current=threshold;
+  useEffect(()=>{const restore=()=>{const nextThreshold=thresholdFromUrl();setPage(pageFromUrl());setTier(tierFromUrl());setThreshold(nextThreshold);setDraftThreshold(nextThreshold??'0');};const reload=()=>setRetry(v=>v+1);restore();window.addEventListener('popstate',restore);window.addEventListener(refreshEvent,reload);return()=>{window.removeEventListener('popstate',restore);window.removeEventListener(refreshEvent,reload);};},[]);
   const changePage=(next:number)=>{const url=new URL(window.location.href);if(next<=1)url.searchParams.delete('page');else url.searchParams.set('page',String(next));window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);setPage(next);};
-  const changeTier=(next:VoteTier|null)=>{const url=new URL(window.location.href);url.searchParams.delete('page');url.searchParams.delete('min');url.searchParams.delete('max');if(next)url.searchParams.set('tier',next);else url.searchParams.delete('tier');window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);setPage(1);setTier(next);setRange(null);setCustomMin('');setCustomMax('');setFilterError('');};
-  const applyCustom=(event:React.FormEvent<HTMLFormElement>)=>{event.preventDefault();const min=customMin.trim(),max=customMax.trim();if((!min&&!max)||(min&&!validAmount(min))||(max&&!validAmount(max))||(min&&max&&Number(min)>Number(max))){setFilterError('กรุณากรอกช่วงตัวเลขที่ถูกต้อง');return;}const next={min:min||null,max:max||null};const url=new URL(window.location.href);url.searchParams.delete('tier');url.searchParams.delete('page');if(next.min)url.searchParams.set('min',next.min);else url.searchParams.delete('min');if(next.max)url.searchParams.set('max',next.max);else url.searchParams.delete('max');window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);setPage(1);setTier(null);setRange(next);setFilterError('');};
+  const changeTier=(next:VoteTier|null)=>{const url=new URL(window.location.href);url.searchParams.delete('page');url.searchParams.delete('min');url.searchParams.delete('max');if(next)url.searchParams.set('tier',next);else url.searchParams.delete('tier');window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);setPage(1);setTier(next);setThreshold(null);setDraftThreshold('0');setFilterError('');};
+  const applyThreshold=(raw:string)=>{const value=raw.trim();if(!validAmount(value)){setFilterError('กรอกตัวเลข 0–10,000');return;}const url=new URL(window.location.href);url.searchParams.delete('tier');url.searchParams.delete('page');url.searchParams.delete('max');if(Number(value)>0)url.searchParams.set('min',value);else url.searchParams.delete('min');window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);setPage(1);setTier(null);setThreshold(Number(value)>0?value:null);setDraftThreshold(value);setFilterError('');};
+  const applyCustom=(event:React.FormEvent<HTMLFormElement>)=>{event.preventDefault();applyThreshold(draftThreshold);};
   const openAssignment=(row:Row)=>{setEditing(row);setSelectedMember(row.assignedMember??'');setSaveError('');};
   const saveAssignment=async()=>{if(!editing)return;setSaving(true);setSaveError('');try{const response=await fetch('/api/ge6-vote-assignment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({txHash:editing.txHash,logIndex:editing.logIndex,member:selectedMember||null,version:editing.assignmentVersion})});const result=await response.json() as {error?:string;member?:string|null;version?:number};if(!response.ok)throw new Error(result.error??'บันทึกไม่สำเร็จ');setData(current=>current?{...current,rows:current.rows.map(row=>row.txHash===editing.txHash&&row.logIndex===editing.logIndex?{...row,assignedMember:result.member??null,assignmentVersion:result.version??0}:row)}:current);setEditing(null);}catch(error){setSaveError(error instanceof Error?error.message:'บันทึกไม่สำเร็จ');}finally{setSaving(false);}};
   useEffect(()=>{
     const controller=new AbortController();
     setLoading(true);setError('');
-    fetch(feedUrl(page,tier,range),{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw new Error('โหลดข้อมูลไม่สำเร็จ');return response.json() as Promise<Feed>;}).then(result=>{count.current=result.chainVoteCount;revision.current=result.assignmentRevision;setData(result);}).catch(e=>{if(!controller.signal.aborted)setError(e instanceof Error?e.message:'โหลดข้อมูลไม่สำเร็จ');}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+    fetch(feedUrl(page,tier,threshold),{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw new Error('โหลดข้อมูลไม่สำเร็จ');return response.json() as Promise<Feed>;}).then(result=>{count.current=result.chainVoteCount;revision.current=result.assignmentRevision;setData(result);}).catch(e=>{if(!controller.signal.aborted)setError(e instanceof Error?e.message:'โหลดข้อมูลไม่สำเร็จ');}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return()=>controller.abort();
-  },[page,tier,range,retry]);
+  },[page,tier,threshold,retry]);
   useEffect(()=>{
     let stopped=false;
     let timer:ReturnType<typeof setTimeout>|undefined;
@@ -73,7 +72,7 @@ export default function Ge6LiveTable(){
           if((typeof result.votes==='number'&&result.votes!==count.current)||(typeof result.assignmentRevision==='number'&&result.assignmentRevision!==revision.current)){
             if(typeof result.votes==='number')count.current=result.votes;
             if(typeof result.assignmentRevision==='number')revision.current=result.assignmentRevision;
-            const feed=await fetch(feedUrl(currentPage.current,currentTier.current,currentRange.current),{cache:'no-store'});
+            const feed=await fetch(feedUrl(currentPage.current,currentTier.current,currentThreshold.current),{cache:'no-store'});
             if(feed.ok&&!stopped){const fresh=await feed.json() as Feed;count.current=fresh.chainVoteCount;revision.current=fresh.assignmentRevision;setData(fresh);}
           }
         }else if(response.status!==409)setSyncError(true);
@@ -87,8 +86,8 @@ export default function Ge6LiveTable(){
   },[]);
   return <section className="board live-votes-board" aria-label="ธุรกรรมโหวต GE6 ล่าสุด">
     <div className="live-votes-heading"><h1>โหวต GE6 ล่าสุด</h1><span className={syncError?'live-status delayed':'live-status'}>{syncError?'รอซิงก์':'LIVE'}</span></div>
-    <div className="live-tier-filters" role="group" aria-label="กรองตามยอดโหวต"><button type="button" className={!tier&&!range?'active':''} aria-pressed={!tier&&!range} onClick={()=>changeTier(null)}>ทั้งหมด</button>{tiers.map(value=><button type="button" key={value} className={'live-tier '+value+(tier===value?' active':'')} aria-pressed={tier===value} onClick={()=>changeTier(value)}>{tierLabels[value]}</button>)}</div>
-    <form className="live-custom-filter" onSubmit={applyCustom}><label>จาก <input type="number" min="0" step="any" inputMode="decimal" value={customMin} onChange={event=>setCustomMin(event.target.value)} placeholder="ขั้นต่ำ"/></label><label>ถึง <input type="number" min="0" step="any" inputMode="decimal" value={customMax} onChange={event=>setCustomMax(event.target.value)} placeholder="สูงสุด"/></label><button type="submit" className={range?'active':''}>กรองยอด</button>{filterError&&<span role="alert" className="error">{filterError}</span>}</form>
+    <div className="live-tier-filters" role="group" aria-label="กรองตามยอดโหวต"><button type="button" className={!tier&&!threshold?'active':''} aria-pressed={!tier&&!threshold} onClick={()=>changeTier(null)}>ทั้งหมด</button>{tiers.map(value=><button type="button" key={value} className={'live-tier '+value+(tier===value?' active':'')} aria-pressed={tier===value} onClick={()=>changeTier(value)}>{tierLabels[value]}</button>)}</div>
+    <form className="live-custom-filter" onSubmit={applyCustom}><div className="live-threshold-controls"><label htmlFor="live-threshold-number">แสดงตั้งแต่</label><div className="live-threshold-input"><input id="live-threshold-number" type="number" min="0" max="10000" step="1" inputMode="numeric" value={draftThreshold} onChange={event=>setDraftThreshold(event.target.value)}/><span>GE6 ขึ้นไป</span></div><button type="submit">แสดง</button></div><input className="live-threshold-slider" aria-label="ยอดโหวตขั้นต่ำ" type="range" min="0" max="10000" step="100" value={Math.min(10000,Math.max(0,Number(draftThreshold)||0))} onChange={event=>setDraftThreshold(event.target.value)} onPointerUp={event=>applyThreshold(event.currentTarget.value)} onKeyUp={event=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key))applyThreshold(event.currentTarget.value);}}/><div className="live-threshold-ticks"><span>0</span><span>1,000</span><span>3,000</span><span>5,000</span><span>10,000+</span></div>{filterError&&<span role="alert" className="error">{filterError}</span>}</form>
     {loading?<div className="loading-panel" role="status"><span className="spinner"/> กำลังโหลดโหวตล่าสุด…</div>:error?<p className="error" role="alert">{error} <button className="text-button" onClick={()=>setRetry(v=>v+1)}>ลองใหม่</button></p>:data&&<>
       {data.rows.length===0&&<p className="live-empty">ยังไม่มีรายการในช่วงนี้</p>}
       {data.rows.length>0&&<div className="table-wrap responsive-card-table live-votes-table" tabIndex={0} aria-label="ตารางธุรกรรมโหวต GE6"><table><thead><tr><th>ระดับ</th><th>กระเป๋า</th><th className="num">โหวตครั้งนี้</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint">น่าจะโหวตใคร</th><th>ผู้รับโหวต</th><th>เวลา / Tx</th></tr></thead>
