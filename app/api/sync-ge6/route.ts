@@ -16,10 +16,12 @@ export async function POST(request:Request){
   const db=await database();
   const checkpoint=(await db.execute({sql:'SELECT value FROM metadata WHERE key=?',args:['ge6Checkpoint']})).rows[0];
   if(!checkpoint)return Response.json({error:'ฐานข้อมูลยังไม่ได้สแกนครั้งแรก กรุณารอการซิงก์ตามรอบ'},{status:503});
-  const previous=(await db.execute({sql:'SELECT value FROM metadata WHERE key=?',args:['ge6Status']})).rows[0];
-  const currentStatus=JSON.parse(String(previous?.value??'null')) as {lastSuccess?:string;votes?:number;phase?:string}|null;
+  const stateRows=(await db.execute("SELECT key,value FROM metadata WHERE key IN ('ge6Status','ge6AssignmentRevision')")).rows;
+  const state=Object.fromEntries(stateRows.map(row=>[String(row.key),String(row.value)]));
+  const currentStatus=JSON.parse(state.ge6Status??'null') as {lastSuccess?:string;votes?:number;phase?:string}|null;
+  const assignmentRevision=Number(state.ge6AssignmentRevision??0);
   const lastSuccess=currentStatus?.lastSuccess;
-  if(currentStatus?.phase!=='error'&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<15000)return Response.json({lastSuccess,votes:currentStatus?.votes,recent:true},{headers:{'Cache-Control':'no-store'}});
+  if(currentStatus?.phase!=='error'&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<15000)return Response.json({lastSuccess,votes:currentStatus?.votes,assignmentRevision,recent:true},{headers:{'Cache-Control':'no-store'}});
   const owner=randomUUID();
   const now=Date.now();
   // One short on-demand pass at a time. A failed or timed-out request can retry after the lease expires.
@@ -35,7 +37,8 @@ export async function POST(request:Request){
   };
   try{
     const status=await poll(db,new TokenXTransport(),{skipScheduledAudit:true,assertLease,deadline:Date.now()+50000});
-    return Response.json({lastSuccess:status.lastSuccess,votes:status.votes},{headers:{'Cache-Control':'no-store'}});
+    const latestRevision=(await db.execute({sql:'SELECT value FROM metadata WHERE key=?',args:['ge6AssignmentRevision']})).rows[0];
+    return Response.json({lastSuccess:status.lastSuccess,votes:status.votes,assignmentRevision:Number(latestRevision?.value??0)},{headers:{'Cache-Control':'no-store'}});
   }catch(error){
     console.error('On-demand GE6 sync failed',error);
     if(!leaseLost)await markError(db,error);

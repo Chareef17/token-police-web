@@ -4,15 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RankingMode } from '@/lib/ge6-current';
 
-type Props={mode:RankingMode;voteSyncedAt:string|null;chainVoteCount:number;ge6HoldersAt:string|null;bnkHoldersAt:string|null;syncError:boolean};
+type Props={mode:RankingMode;voteSyncedAt:string|null;chainVoteCount:number;assignmentRevision:number;ge6HoldersAt:string|null;bnkHoldersAt:string|null;syncError:boolean};
 const formatTime=(value:string|null)=>value?new Date(value).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'}):'ไม่ทราบเวลา';
 
-export default function LiveForecastSync({mode,voteSyncedAt,chainVoteCount,ge6HoldersAt,bnkHoldersAt,syncError}:Props){
+export default function LiveForecastSync({mode,voteSyncedAt,chainVoteCount,assignmentRevision,ge6HoldersAt,bnkHoldersAt,syncError}:Props){
   const router=useRouter();
   const [lastSync,setLastSync]=useState(voteSyncedAt);
   const [failed,setFailed]=useState(syncError);
   const count=useRef(chainVoteCount);
-  useEffect(()=>{setLastSync(voteSyncedAt);setFailed(syncError);count.current=chainVoteCount;},[voteSyncedAt,chainVoteCount,syncError]);
+  const revision=useRef(assignmentRevision);
+  useEffect(()=>{setLastSync(voteSyncedAt);setFailed(syncError);count.current=chainVoteCount;revision.current=assignmentRevision;},[voteSyncedAt,chainVoteCount,assignmentRevision,syncError]);
   useEffect(()=>{
     let stopped=false;
     let timer:ReturnType<typeof setTimeout>|undefined;
@@ -25,11 +26,12 @@ export default function LiveForecastSync({mode,voteSyncedAt,chainVoteCount,ge6Ho
       try{
         const response=await fetch('/api/sync-ge6',{method:'POST',cache:'no-store'});
         if(response.ok){
-          const result=await response.json() as {lastSuccess:string;votes?:number};
+          const result=await response.json() as {lastSuccess:string;votes?:number;assignmentRevision?:number};
           if(stopped)return;
           setLastSync(result.lastSuccess);
           setFailed(false);
-          if(typeof result.votes==='number'&&result.votes!==count.current){count.current=result.votes;router.refresh();}
+          const changed=(typeof result.votes==='number'&&result.votes!==count.current)||(typeof result.assignmentRevision==='number'&&result.assignmentRevision!==revision.current);
+          if(changed){if(typeof result.votes==='number')count.current=result.votes;if(typeof result.assignmentRevision==='number')revision.current=result.assignmentRevision;router.refresh();}
         }else if(response.status!==409){setFailed(true);}
       }catch{if(!stopped)setFailed(true);}
       finally{running=false;schedule();}

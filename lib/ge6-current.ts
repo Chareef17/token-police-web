@@ -17,14 +17,21 @@ async function calculateRanking(mode:RankingMode='votes') {
   const includeHoldings=mode!=='votes';
   const heldPromise=includeHoldings?ge6HeldBalances():Promise.resolve(new Map<string,bigint>());
   const db = await database();
-  const freshnessRows = (await db.execute({sql:"SELECT key,value FROM metadata WHERE key IN ('ge6Status','ge6HoldersAt','bnkHoldersAt')"})).rows;
+  const freshnessRows = (await db.execute({sql:"SELECT key,value FROM metadata WHERE key IN ('ge6Status','ge6HoldersAt','bnkHoldersAt','ge6AssignmentRevision')"})).rows;
   const freshness = Object.fromEntries(freshnessRows.map(row=>[String(row.key),String(row.value)]));
   const ge6Status: {lastSuccess?:string;phase?:string;votes?:number}|null = JSON.parse(freshness.ge6Status??'null');
   const ge6HoldersAt: string|null = freshness.ge6HoldersAt?JSON.parse(freshness.ge6HoldersAt):null;
   const bnkHoldersAt: string|null = freshness.bnkHoldersAt?JSON.parse(freshness.bnkHoldersAt):null;
-  const votes = (await db.execute({sql:'SELECT address,amount,voted_at FROM ge6_events WHERE julianday(voted_at)>julianday(?)',args:[preliminary.cutoff]})).rows;
+  const [voteResult,assignmentResult]=await db.batch([
+    {sql:'SELECT tx_hash,log_index,address,amount,voted_at FROM ge6_events WHERE julianday(voted_at)>julianday(?)',args:[preliminary.cutoff]},
+    {sql:'SELECT a.tx_hash,a.log_index,a.member FROM ge6_vote_assignments a JOIN ge6_events e ON e.tx_hash=a.tx_hash AND e.log_index=a.log_index WHERE julianday(e.voted_at)>julianday(?)',args:[preliminary.cutoff]},
+  ],'read');
+  const votes=voteResult.rows;
+  const assignments=new Map(assignmentResult.rows.map(row=>[String(row.tx_hash)+':'+String(row.log_index),ge6CandidateByName.get(String(row.member).toLowerCase())]));
   const wallets = new Map<string,bigint>();
+  const predictedWallets = new Map<string,bigint>();
   const todayWallets = new Map<string,bigint>();
+  const assignedVotes:{address:string;member:string;value:bigint;today:boolean}[]=[];
   let lastVoteAt: string | null = null;
   // Bangkok is UTC+7 year-round. Compare against midnight today in Bangkok.
   const bangkokOffsetMs=7*60*60*1000;
@@ -35,7 +42,13 @@ async function calculateRanking(mode:RankingMode='votes') {
     const voteAmount=units(String(row.amount));
     wallets.set(address,(wallets.get(address)??0n)+voteAmount);
     const at = String(row.voted_at);
-    if(Date.parse(at)>=todayStartUtc)todayWallets.set(address,(todayWallets.get(address)??0n)+voteAmount);
+    const today=Date.parse(at)>=todayStartUtc;
+    const assigned=assignments.get(String(row.tx_hash)+':'+String(row.log_index));
+    if(assigned)assignedVotes.push({address,member:assigned,value:voteAmount,today});
+    else{
+      predictedWallets.set(address,(predictedWallets.get(address)??0n)+voteAmount);
+      if(today)todayWallets.set(address,(todayWallets.get(address)??0n)+voteAmount);
+    }
     if (!lastVoteAt || Date.parse(at)>Date.parse(lastVoteAt)) lastVoteAt=at;
   }
   const heldBalances=await heldPromise;
@@ -81,7 +94,7 @@ async function calculateRanking(mode:RankingMode='votes') {
     current[kind]+=share;
     wallets.set(address,current);contributions.set(name,wallets);
   };
-  let allocated=0n,unassigned=0n,manualWallets=0;
+  let allocated=0n,unassigned=0n,manualWallets=[...wallets.keys()].filter(address=>manual.has(address)).length;
   let heldAllocated=0n,heldUnassigned=0n;
   const bnkAdditions=new Map<string,bigint>();
   const choicesFor=(address:string)=>{
@@ -90,8 +103,13 @@ async function calculateRanking(mode:RankingMode='votes') {
       .sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1)
       .slice(0,3).map(([name])=>name);
   };
-  for (const [address,total] of wallets) {
-    if(manual.has(address))manualWallets++;
+  for(const vote of assignedVotes){
+    allocated+=vote.value;
+    additions.set(vote.member,(additions.get(vote.member)??0n)+vote.value);
+    record(vote.member,vote.address,vote.value,'votes');
+    if(vote.today)todayAdditions.set(vote.member,(todayAdditions.get(vote.member)??0n)+vote.value);
+  }
+  for (const [address,total] of predictedWallets) {
     const choices=choicesFor(address);
     if (!choices.length) {unassigned+=total;continue;}
     allocated+=total;
@@ -122,7 +140,7 @@ async function calculateRanking(mode:RankingMode='votes') {
   if(trackedTotal+untrackedTotal!==votedTotal)throw new Error('GE6 vote totals do not reconcile');
   return {rows,mode,includeHoldings,contributions,additions,heldAdditions,
     cutoff:preliminary.cutoff,lastVoteAt,postVoteCount:votes.length,walletCount:wallets.size,manualWallets,
-    allocated:amount(allocated),unassigned:amount(unassigned),votedTotal:amount(votedTotal),trackedTotal:amount(trackedTotal),untrackedTotal:amount(untrackedTotal),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),voteSyncedAt:ge6Status?.lastSuccess??null,chainVoteCount:Number(ge6Status?.votes??0),ge6HoldersAt,bnkHoldersAt,syncError:ge6Status?.phase==='error',fetchedAt:new Date().toISOString()};
+    allocated:amount(allocated),unassigned:amount(unassigned),votedTotal:amount(votedTotal),trackedTotal:amount(trackedTotal),untrackedTotal:amount(untrackedTotal),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),voteSyncedAt:ge6Status?.lastSuccess??null,chainVoteCount:Number(ge6Status?.votes??0),assignmentRevision:Number(freshness.ge6AssignmentRevision??0),ge6HoldersAt,bnkHoldersAt,syncError:ge6Status?.phase==='error',fetchedAt:new Date().toISOString()};
 }
 
 export async function ge6CurrentRanking(mode:RankingMode='votes'){
@@ -134,13 +152,24 @@ export async function ge6CurrentRanking(mode:RankingMode='votes'){
 // snapshot are shown here for discovery, but never added to the current ranking.
 async function allMemberVoters(name:string){
   const db=await database();
-  const [ge6Rows,historyRows,manualRows]=await db.batch([
-    'SELECT address,amount FROM ge6_events WHERE address IS NOT NULL',
+  const [ge6Rows,historyRows,manualRows,assignmentRows]=await db.batch([
+    'SELECT tx_hash,log_index,address,amount FROM ge6_events WHERE address IS NOT NULL',
     {sql:`SELECT address,event,member,amount FROM votes WHERE event IN (?,?,?) AND address IN (SELECT address FROM ge6_events)`,args:events},
     'SELECT address,rank1,rank2,rank3 FROM manual_predictions WHERE address IN (SELECT address FROM ge6_events)',
+    'SELECT tx_hash,log_index,member FROM ge6_vote_assignments',
   ],'read');
   const totals=new Map<string,bigint>();
-  for(const row of ge6Rows.rows){const address=String(row.address).toLowerCase();if(addressPattern.test(address))totals.set(address,(totals.get(address)??0n)+units(String(row.amount)));}
+  const unassignedTotals=new Map<string,bigint>();
+  const assignedContributions=new Map<string,bigint>();
+  const assignments=new Map(assignmentRows.rows.map(row=>[String(row.tx_hash)+':'+String(row.log_index),ge6CandidateByName.get(String(row.member).toLowerCase())]));
+  for(const row of ge6Rows.rows){
+    const address=String(row.address).toLowerCase();if(!addressPattern.test(address))continue;
+    const value=units(String(row.amount));
+    totals.set(address,(totals.get(address)??0n)+value);
+    const assigned=assignments.get(String(row.tx_hash)+':'+String(row.log_index));
+    if(assigned===name)assignedContributions.set(address,(assignedContributions.get(address)??0n)+value);
+    else if(!assigned)unassignedTotals.set(address,(unassignedTotals.get(address)??0n)+value);
+  }
   const history=new Map<string,Map<string,bigint>>();
   for(const row of historyRows.rows){
     const address=String(row.address).toLowerCase();
@@ -157,13 +186,13 @@ async function allMemberVoters(name:string){
     if(members.length)manual.set(String(row.address).toLowerCase(),members);
   }
   const matches:{address:string;votes:bigint;voted:bigint}[]=[];
-  for(const [address,total] of totals){
+  for(const [address,voted] of totals){
     const choices=manual.get(address)??[...(history.get(address)??new Map<string,bigint>())]
       .sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1)
       .slice(0,3).map(([candidate])=>candidate);
-    if(!choices.includes(name))continue;
-    const share=splitVote(total,choices).find(entry=>entry[0]===name)?.[1]??0n;
-    if(share>0n)matches.push({address,votes:share,voted:total});
+    const predicted=choices.includes(name)?splitVote(unassignedTotals.get(address)??0n,choices).find(entry=>entry[0]===name)?.[1]??0n:0n;
+    const share=predicted+(assignedContributions.get(address)??0n);
+    if(share>0n)matches.push({address,votes:share,voted});
   }
   return matches.sort((a,b)=>a.votes===b.votes?a.address.localeCompare(b.address):a.votes>b.votes?-1:1);
 }
