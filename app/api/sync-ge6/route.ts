@@ -17,12 +17,13 @@ export async function POST(request:Request){
   const db=await database();
   const checkpoint=(await db.execute({sql:'SELECT value FROM metadata WHERE key=?',args:['ge6Checkpoint']})).rows[0];
   if(!checkpoint)return Response.json({error:'ฐานข้อมูลยังไม่ได้สแกนครั้งแรก กรุณารอการซิงก์ตามรอบ'},{status:503});
-  const stateRows=(await db.execute("SELECT key,value FROM metadata WHERE key IN ('ge6Status','ge6AssignmentRevision')")).rows;
+  const stateRows=(await db.execute("SELECT key,value FROM metadata WHERE key IN ('ge6Status','ge6AssignmentRevision','ge6HoldersAt','bnkHoldersAt')")).rows;
   const state=Object.fromEntries(stateRows.map(row=>[String(row.key),String(row.value)]));
   const currentStatus=JSON.parse(state.ge6Status??'null') as {lastSuccess?:string;votes?:number;phase?:string}|null;
   const assignmentRevision=Number(state.ge6AssignmentRevision??0);
+  const holderTimes={ge6HoldersAt:state.ge6HoldersAt?JSON.parse(state.ge6HoldersAt):null,bnkHoldersAt:state.bnkHoldersAt?JSON.parse(state.bnkHoldersAt):null};
   const lastSuccess=currentStatus?.lastSuccess;
-  if(!force&&currentStatus?.phase!=='error'&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<8000)return Response.json({lastSuccess,votes:currentStatus?.votes,assignmentRevision,recent:true},{headers:{'Cache-Control':'no-store'}});
+  if(!force&&currentStatus?.phase!=='error'&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<8000)return Response.json({lastSuccess,votes:currentStatus?.votes,assignmentRevision,...holderTimes,recent:true},{headers:{'Cache-Control':'no-store'}});
   const owner=randomUUID();
   const now=Date.now();
   // One short on-demand pass at a time. A failed or timed-out request can retry after the lease expires.
@@ -39,7 +40,9 @@ export async function POST(request:Request){
   try{
     const status=await poll(db,new TokenXTransport(),{skipScheduledAudit:true,assertLease,deadline:Date.now()+50000});
     const latestRevision=(await db.execute({sql:'SELECT value FROM metadata WHERE key=?',args:['ge6AssignmentRevision']})).rows[0];
-    return Response.json({lastSuccess:status.lastSuccess,votes:status.votes,assignmentRevision:Number(latestRevision?.value??0)},{headers:{'Cache-Control':'no-store'}});
+    const latestHolders=(await db.execute("SELECT key,value FROM metadata WHERE key IN ('ge6HoldersAt','bnkHoldersAt')")).rows;
+    const holderState=Object.fromEntries(latestHolders.map(row=>[String(row.key),JSON.parse(String(row.value))]));
+    return Response.json({lastSuccess:status.lastSuccess,votes:status.votes,assignmentRevision:Number(latestRevision?.value??0),ge6HoldersAt:holderState.ge6HoldersAt??null,bnkHoldersAt:holderState.bnkHoldersAt??null},{headers:{'Cache-Control':'no-store'}});
   }catch(error){
     console.error('On-demand GE6 sync failed',error);
     if(!leaseLost)await markError(db,error);

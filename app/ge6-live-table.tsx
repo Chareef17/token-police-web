@@ -33,6 +33,7 @@ export default function Ge6LiveTable(){
   const [syncError,setSyncError]=useState(false);
   const count=useRef<number|null>(null);
   const revision=useRef<number|null>(null);
+  const lastLoaded=useRef(0);
   const currentPage=useRef(page);
   const currentThreshold=useRef(threshold);
   const currentExact=useRef(exact);
@@ -47,7 +48,7 @@ export default function Ge6LiveTable(){
   useEffect(()=>{
     const controller=new AbortController();
     setLoading(true);setError('');
-    fetch(feedUrl(page,threshold,exact),{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw new Error('โหลดข้อมูลไม่สำเร็จ');return response.json() as Promise<Feed>;}).then(result=>{count.current=result.chainVoteCount;revision.current=result.assignmentRevision;setData(result);}).catch(e=>{if(!controller.signal.aborted)setError(e instanceof Error?e.message:'โหลดข้อมูลไม่สำเร็จ');}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+    fetch(feedUrl(page,threshold,exact),{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw new Error('โหลดข้อมูลไม่สำเร็จ');return response.json() as Promise<Feed>;}).then(result=>{count.current=result.chainVoteCount;revision.current=result.assignmentRevision;lastLoaded.current=Date.now();setData(result);}).catch(e=>{if(!controller.signal.aborted)setError(e instanceof Error?e.message:'โหลดข้อมูลไม่สำเร็จ');}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return()=>controller.abort();
   },[page,threshold,exact,retry]);
   useEffect(()=>{
@@ -65,11 +66,11 @@ export default function Ge6LiveTable(){
           const result=await response.json() as {votes?:number;assignmentRevision?:number};
           if(stopped)return;
           setSyncError(false);
-          if((typeof result.votes==='number'&&result.votes!==count.current)||(typeof result.assignmentRevision==='number'&&result.assignmentRevision!==revision.current)){
+          if((typeof result.votes==='number'&&result.votes!==count.current)||(typeof result.assignmentRevision==='number'&&result.assignmentRevision!==revision.current)||Date.now()-lastLoaded.current>30000){
             if(typeof result.votes==='number')count.current=result.votes;
             if(typeof result.assignmentRevision==='number')revision.current=result.assignmentRevision;
             const feed=await fetch(feedUrl(currentPage.current,currentThreshold.current,currentExact.current),{cache:'no-store'});
-            if(feed.ok&&!stopped){const fresh=await feed.json() as Feed;count.current=fresh.chainVoteCount;revision.current=fresh.assignmentRevision;setData(fresh);}
+            if(feed.ok&&!stopped){const fresh=await feed.json() as Feed;count.current=fresh.chainVoteCount;revision.current=fresh.assignmentRevision;lastLoaded.current=Date.now();setData(fresh);}
           }
         }else if(response.status!==409)setSyncError(true);
       }catch{if(!stopped)setSyncError(true);}

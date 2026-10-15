@@ -10,7 +10,8 @@ export default function LiveSiteSync(){
   useEffect(()=>{
     if(pathname==='/ge6-live'||pathname==='/ge6-current')return;
     let stopped=false,timer:ReturnType<typeof setTimeout>|undefined;
-    let votes:number|undefined,revision:number|undefined;
+    let votes:number|undefined,revision:number|undefined,ge6HoldersAt:string|null|undefined,bnkHoldersAt:string|null|undefined;
+    let lastRefresh=0;
     const schedule=()=>{if(!stopped)timer=setTimeout(sync,10000);};
     async function sync(){
       if(stopped)return;
@@ -18,14 +19,15 @@ export default function LiveSiteSync(){
       try{
         const response=await fetch('/api/sync-ge6',{method:'POST',cache:'no-store'});
         if(response.ok){
-          const result=await response.json() as {votes?:number;assignmentRevision?:number};
+          const result=await response.json() as {votes?:number;assignmentRevision?:number;ge6HoldersAt?:string|null;bnkHoldersAt?:string|null};
           if(stopped)return;
-          if(votes===undefined||result.votes!==votes||result.assignmentRevision!==revision){
+          if(votes===undefined||result.votes!==votes||result.assignmentRevision!==revision||result.ge6HoldersAt!==ge6HoldersAt||result.bnkHoldersAt!==bnkHoldersAt||Date.now()-lastRefresh>30000){
             forgetAll();
             window.dispatchEvent(new Event(refreshEvent));
             router.refresh();
+            lastRefresh=Date.now();
           }
-          votes=result.votes;revision=result.assignmentRevision;
+          votes=result.votes;revision=result.assignmentRevision;ge6HoldersAt=result.ge6HoldersAt;bnkHoldersAt=result.bnkHoldersAt;
         }
       }catch{}
       schedule();
