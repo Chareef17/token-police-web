@@ -42,6 +42,20 @@ test('includes votes two blocks behind the head but waits on the newest block',a
     assert.equal(status.votes,1);
   }finally{db.close();}
 });
+test('fetches missing block timestamps in bounded parallel batches',async()=>{
+  const logs=Array.from({length:12},(_,i)=>{const {timestamp,...log}=vote(i,height-20-i);return log;});
+  const {db,transport}=await setup(logs);
+  const get=transport.get;let active=0,peak=0;
+  transport.get=async path=>{
+    if(path.startsWith('/blocks/')&&Number(path.split('/').at(-1))<height-2){
+      active++;peak=Math.max(peak,active);
+      await new Promise(resolve=>setTimeout(resolve,5));
+      active--;
+    }
+    return get(path);
+  };
+  try{assert.equal((await poll(db,transport)).votes,12);assert.equal(peak,8);}finally{db.close();}
+});
 test('incremental passes only add new votes and keep earlier ones',async()=>{
   const {db,state,transport}=await setup([vote(0),vote(1)]);
   try{
