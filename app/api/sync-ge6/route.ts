@@ -8,6 +8,7 @@ export const dynamic='force-dynamic';
 export const maxDuration=60;
 
 export async function POST(request:Request){
+  const force=new URL(request.url).searchParams.get('force')==='1';
   const origin=request.headers.get('origin');
   let sameOrigin=false;
   try{const parsed=new URL(origin||'');sameOrigin=['http:','https:'].includes(parsed.protocol)&&parsed.host===request.headers.get('host');}catch{}
@@ -21,7 +22,7 @@ export async function POST(request:Request){
   const currentStatus=JSON.parse(state.ge6Status??'null') as {lastSuccess?:string;votes?:number;phase?:string}|null;
   const assignmentRevision=Number(state.ge6AssignmentRevision??0);
   const lastSuccess=currentStatus?.lastSuccess;
-  if(currentStatus?.phase!=='error'&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<8000)return Response.json({lastSuccess,votes:currentStatus?.votes,assignmentRevision,recent:true},{headers:{'Cache-Control':'no-store'}});
+  if(!force&&currentStatus?.phase!=='error'&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<8000)return Response.json({lastSuccess,votes:currentStatus?.votes,assignmentRevision,recent:true},{headers:{'Cache-Control':'no-store'}});
   const owner=randomUUID();
   const now=Date.now();
   // One short on-demand pass at a time. A failed or timed-out request can retry after the lease expires.

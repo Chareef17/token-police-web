@@ -10,9 +10,19 @@ export default function RefreshButton(){
     setRefreshing(true);
     setError('');
     try{
-      const response=await fetch('/api/sync-ge6',{method:'POST',cache:'no-store'});
-      const result=await response.json();
-      if(!response.ok)throw new Error(result.error||'ซิงก์ข้อมูลไม่สำเร็จ');
+      // A live page may already be syncing. Wait for its lease to finish, then
+      // perform a fresh pass instead of treating that overlap as a failed click.
+      const started=Date.now();
+      for(;;){
+        const response=await fetch('/api/sync-ge6?force=1',{method:'POST',cache:'no-store'});
+        if(response.status===409&&Date.now()-started<75000){
+          await new Promise(resolve=>setTimeout(resolve,1500));
+          continue;
+        }
+        const result=await response.json();
+        if(!response.ok)throw new Error(result.error||'ซิงก์ข้อมูลไม่สำเร็จ');
+        break;
+      }
       forgetAll();
       window.location.reload();
     }catch(caught){
