@@ -96,7 +96,7 @@ export async function nammonnFans(){
   return fans.map(f=>({...f,...details.get(f.address)!,voted:amount(voted.get(f.address)??0n)}));
 }
 // Top GE6 balances straight from TokenX (sorted by balance there).
-const holderList=(limit:number)=>cached('holders:'+limit,300000,async()=>{
+const holderList=async(limit:number)=>{
   const page=await tokenxGet(`/tokens/${GE6_TOKEN}/holders`) as {items?:{address?:{hash?:string;is_contract?:boolean};value?:string}[]};
   if(!Array.isArray(page.items))throw new Error('Invalid holders response');
   const holders=page.items.map(item=>{
@@ -105,7 +105,7 @@ const holderList=(limit:number)=>cached('holders:'+limit,300000,async()=>{
     return {rank:0,address,name:null as string|null,amount:amount(BigInt(item.value!)),contract:!!item.address?.is_contract};
   }).filter(h=>!officialWallets.has(h.address)).slice(0,limit).map((h,i)=>({...h,rank:i+1}));
   return {holders,fetchedAt:new Date().toISOString()};
-});
+};
 export async function ge6Holders(limit=20){
   const {holders,fetchedAt}=await holderList(limit);const names=await namesFor(holders.map(h=>h.address));
   return {holders:holders.map(h=>({...h,name:names.get(h.address)??null})),fetchedAt};

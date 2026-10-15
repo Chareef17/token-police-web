@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ThemeToggle from './theme-toggle';
 import RefreshButton from './refresh-button';
+import LiveSiteSync from './live-site-sync';
 const iconPaths={
   home:<><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z"/><path d="M9 21v-7h6v7"/></>,
   forecast:<><path d="M4 20h16M5 16l5-5 4 3 5-7"/><path d="M16 7h3v3"/></>,
@@ -19,6 +20,6 @@ export default function SiteHeader(){
   return <header className="site-header">
     <Link className="brand" href="/" aria-label="หน้าหลัก"><span className="sleeping-logo"><img src="/tofer-logo.webp" alt="" width="889" height="890" /></span><span className="brand-copy brand-name">คุณนักสืบโตเฟ่อ</span></Link>
     <nav className="header-nav" aria-label="เมนูหลัก">{links.map(l=><a key={l.href} href={l.href} className={pathname===l.href?'active':undefined} aria-current={pathname===l.href?'page':undefined}><span className="nav-icon" aria-hidden="true"><NavIcon name={l.icon}/></span><span>{l.label}</span></a>)}</nav>
-    <div className="header-right"><RefreshButton/><ThemeToggle/></div>
+    <div className="header-right"><LiveSiteSync/><RefreshButton/><ThemeToggle/></div>
   </header>;
 }

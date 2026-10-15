@@ -51,7 +51,7 @@ export default function Home(){
     else if(e.key==='Enter'&&active>=0){e.preventDefault();pick(suggestions[active]);}
     else if(e.key==='Escape'){setOpen(false);}
   }
-  async function loadBalance(address:string,id:number,fresh:boolean){setBalanceLoading(true);setBalanceError('');try{const result=await cachedJson<Balance>('/api/balances/'+address,{fresh});if(serial.current===id)setBalance(result);}catch(e){if(serial.current===id)setBalanceError(e instanceof Error?e.message:'อ่านยอดเหรียญไม่ได้');}finally{if(serial.current===id)setBalanceLoading(false);}}
+  async function loadBalance(address:string,id:number,fresh:boolean){setBalanceLoading(true);setBalanceError('');try{const result=await cachedJson<Balance>('/api/balances/'+address+(fresh?'?fresh=1':''),{fresh});if(serial.current===id)setBalance(result);}catch(e){if(serial.current===id)setBalanceError(e instanceof Error?e.message:'อ่านยอดเหรียญไม่ได้');}finally{if(serial.current===id)setBalanceLoading(false);}}
   async function search(value:string,fresh=false){
     const address=value.trim().toLowerCase();if(!/^0x[0-9a-f]{40}$/.test(address)){setError('กรุณากรอก address ที่ขึ้นต้นด้วย 0x ให้ครบ 42 ตัวอักษร');return;}
     const id=++serial.current;setInput(address);setLoading(true);setError('');setData(null);setBalance(null);setBalanceError('');setEditing(false);setEditingVote(null);setNotice('');setTab('history');
@@ -59,7 +59,7 @@ export default function Home(){
     void loadBalance(address,id,fresh);
     try{const result=await cachedJson<Wallet>('/api/wallet/'+address,{fresh});if(serial.current===id)setData(result);}catch(e){if(serial.current===id)setError(e instanceof Error?e.message:'ค้นหาไม่สำเร็จ');}finally{if(serial.current===id)setLoading(false);}
   }
-  useEffect(()=>{const value=new URLSearchParams(window.location.search).get('address');if(value)void search(value);},[]);
+  useEffect(()=>{const params=new URLSearchParams(window.location.search);const value=params.get('address');if(value)void search(value,params.get('fresh')==='1');},[]);
   useEffect(()=>{const reload=()=>{const value=new URLSearchParams(window.location.search).get('address');if(value)void search(value,true);};window.addEventListener(refreshEvent,reload);return ()=>window.removeEventListener(refreshEvent,reload);},[]);
   async function saveName(event:FormEvent){event.preventDefault();if(!data)return;const id=serial.current;setSaving(true);setNameError('');try{const r=await fetch('/api/names',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:data.address,name,version:data.name?.version||0})});const result=await r.json();if(!r.ok)throw new Error(result.error);if(serial.current===id){forget('/api/wallet/'+data.address);setData({...data,name:result});setEditing(false);setNotice('บันทึกชื่อแล้ว ทุกคนจะเห็นชื่อนี้');}}catch(e){if(serial.current===id)setNameError(e instanceof Error?e.message:'บันทึกไม่สำเร็จ');}finally{setSaving(false);}}
   const stale=!!data && (data.ge6Status?.phase==='error'||!data.ge6Status?.lastSuccess||Date.now()-Date.parse(data.ge6Status.lastSuccess)>20*60000);

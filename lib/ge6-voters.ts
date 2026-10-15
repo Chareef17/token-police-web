@@ -12,12 +12,8 @@ const otherPrice=68n;
 type Ranked={address:string;voted:string;rank:number};
 type Activity={date:string|null};
 export type VoterDetails={name:string|null;bnk:string|null;ge6:string|null;lastTxAt:string|null;likely:string[];topVote:string|null};
-const activityCache=new Map<string,{until:number;value:Promise<Activity>}>();
-let rankingCache:{until:number;value:Promise<Ranked[]>}|undefined;
-
 async function ranking(){
-  if(rankingCache&&rankingCache.until>Date.now())return rankingCache.value;
-  const value=(async()=>{
+  return (async()=>{
     const rows=(await (await database()).execute("SELECT address,amount FROM ge6_events WHERE address IS NOT NULL")).rows;
     const totals=new Map<string,bigint>();
     for(const row of rows){
@@ -28,22 +24,15 @@ async function ranking(){
     return [...totals].sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1)
       .map(([address,total],i)=>({address,voted:amount(total),rank:i+1}));
   })();
-  rankingCache={until:Date.now()+60000,value};
-  value.catch(()=>{if(rankingCache?.value===value)rankingCache=undefined;});
-  return value;
 }
 
 async function latestTransaction(address:string):Promise<Activity>{
-  const hit=activityCache.get(address);if(hit&&hit.until>Date.now())return hit.value;
-  const value=(async()=>{
+  return (async()=>{
     const response=await tokenxGet(`/addresses/${address}/transactions?filter=from`) as {items?:{timestamp?:string;from?:{hash?:string}}[]};
     if(!Array.isArray(response.items))throw new Error('Invalid transactions response');
     const first=response.items.find(item=>item.from?.hash?.toLowerCase()===address);
     return {date:first?.timestamp??null};
   })();
-  activityCache.set(address,{until:Date.now()+300000,value});
-  value.catch(()=>activityCache.delete(address));
-  return value;
 }
 
 export async function voterDetails(addresses:string[]):Promise<Map<string,VoterDetails>>{
