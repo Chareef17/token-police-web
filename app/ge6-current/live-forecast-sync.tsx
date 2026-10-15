@@ -18,7 +18,7 @@ export default function LiveForecastSync({mode,voteSyncedAt,chainVoteCount,assig
     let stopped=false;
     let timer:ReturnType<typeof setTimeout>|undefined;
     let running=false;
-    const schedule=()=>{if(!stopped)timer=setTimeout(sync,15000);};
+    const schedule=()=>{if(!stopped)timer=setTimeout(sync,8000);};
     async function sync(){
       if(stopped||running)return;
       if(document.hidden){schedule();return;}

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { connect } from '../lib/database.mjs';
-import { initialize,poll,iface,creationBlock } from '../lib/ge6-indexer.mjs';
+import { initialize,poll,iface,creationBlock,confirmationBlocks } from '../lib/ge6-indexer.mjs';
 const hash=n=>'0x'+n.toString(16).padStart(64,'0');
 const address='0x'+'12'.repeat(20);
 const height=creationBlock+1000;
@@ -32,6 +32,14 @@ test('direct backfill deduplicates logs, preserves precision/history, excludes u
     const rows=await all(db,"SELECT * FROM votes WHERE event='GE6'");
     assert.equal(rows.length,2);assert.equal(rows[0].amount,'1.000000000000000001');
     assert.equal(JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Status'")).value).source,'tokenx-direct');
+  }finally{db.close();}
+});
+test('includes votes two blocks behind the head but waits on the newest block',async()=>{
+  const {db,transport}=await setup([vote(0,height-2),vote(1,height-1)]);
+  try{
+    const status=await poll(db,transport);
+    assert.equal(status.confirmedBlock,height-2);
+    assert.equal(status.votes,1);
   }finally{db.close();}
 });
 test('incremental passes only add new votes and keep earlier ones',async()=>{
@@ -98,7 +106,7 @@ test('out-of-order pagination fails without advancing checkpoint',async()=>{
 });
 test('chain change during backfill leaves all stored votes untouched',async()=>{
   const {db,transport}=await setup([vote(0)]);const get=transport.get;let calls=0;
-  transport.get=async path=>{const result=await get(path);if(path===`/blocks/${height-12}`&&++calls>1)result.hash=hash(99);return result;};
+  transport.get=async path=>{const result=await get(path);if(path===`/blocks/${height-confirmationBlocks}`&&++calls>1)result.hash=hash(99);return result;};
   try{await assert.rejects(poll(db,transport),/Chain changed/);assert.equal((await one(db,'SELECT count(*) n FROM votes')).n,1);}finally{db.close();}
 });
 test('retries a cached pagination page before advancing',async()=>{
