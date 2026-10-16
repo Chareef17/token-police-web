@@ -9,3 +9,11 @@ test('groups GE6 transfers by counterparty, counts distinct transactions, and ex
   assert.deepEqual(result.incoming.map(x=>[x.address,x.amount,x.count]),[[b,'601',2]]);
   assert.deepEqual(result.outgoing.map(x=>[x.address,x.amount,x.count]),[[c,'2',1]]);
 });
+test('keeps verified BNK redemption separate from ordinary transfers to the same contract',()=>{
+  const rows=[
+    {from:a,to:b,raw:'4000000000000000000000',txHash:'0x1',logIndex:0,redeem:true},
+    {from:a,to:b,raw:'100000000000000000000',txHash:'0x2',logIndex:0,redeem:false},
+  ];
+  const result=summarizeGe6Flow(rows,a);
+  assert.deepEqual(result.outgoing.map(x=>[x.amount,x.count,x.redeem]),[['4000',1,true],['100',1,false]]);
+});
