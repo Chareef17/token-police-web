@@ -30,7 +30,7 @@ function EdgeGroup({edges,names,direction}:{edges:Edge[];names:Record<string,str
   </div>;
 }
 
-export default function Ge6WalletFlow({address,name,votedAmount,voteCount}:{address:string;name:string|null;votedAmount:string;voteCount:number}){
+export default function Ge6WalletFlow({address,votedAmount,voteCount}:{address:string;votedAmount:string;voteCount:number}){
   const [rows,setRows]=useState<Transfer[]>([]);
   const [names,setNames]=useState<Record<string,string>>({});
   const [pages,setPages]=useState(0);
@@ -91,7 +91,6 @@ export default function Ge6WalletFlow({address,name,votedAmount,voteCount}:{addr
     {error&&<div className="flow-error" role="alert">{error} · ยอดรับและโอนที่เห็นยังไม่ครบ <button type="button" onClick={()=>setRetry(value=>value+1)}>ลองใหม่</button></div>}
     <div className="flow-diagram">
       <EdgeGroup edges={flow.incoming} names={names} direction="in"/>
-      <div className="flow-center"><span className="flow-center-label">กระเป๋านี้</span><strong>{name||short(address)}</strong><AddressCopy address={address}/><span className="flow-center-arrow" aria-hidden="true">← รับเข้า&nbsp;&nbsp;·&nbsp;&nbsp;โอนออก →</span></div>
       <div className="flow-outbound"><EdgeGroup edges={flow.outgoing} names={names} direction="out"/>{voteCount>0&&<div className="flow-vote"><span className="flow-vote-icon" aria-hidden="true">✦</span><div><span>ใช้โหวต GE6</span><strong title={votedAmount}>{display(votedAmount)} <small>GE6</small></strong><span>{voteCount.toLocaleString()} Tx</span></div></div>}</div>
     </div>
   </section>;
