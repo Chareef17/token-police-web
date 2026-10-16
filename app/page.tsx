@@ -5,6 +5,7 @@ import { display, displayShort } from '@/lib/amount.mjs';
 import SiteHeader from './site-header';
 import { cachedJson, forget, refreshEvent } from '@/lib/client-cache';
 import AddressCopy from './address-copy';
+import Ge6WalletFlow from './ge6-wallet-flow';
 import Ge6VotersTable from './ge6-voters-table';
 import ManualPredictions,{type ManualPrediction} from './manual-predictions';
 import Ge6AssignmentDialog from './ge6-assignment-dialog';
@@ -87,6 +88,7 @@ export default function Home(){
           <div className="freshness"><p>ยอดเหรียญ {balance?date(balance.fetchedAt):'รอข้อมูลจาก TokenX Scan'}</p></div>
           {balanceError&&<div className="balance-error" role="status">{balanceError}<button className="text-button" onClick={()=>void loadBalance(data.address,serial.current,true)}>ลองอีกครั้ง</button></div>}
         </section>
+        <Ge6WalletFlow key={data.address} address={data.address} name={data.name?.name??null} votedAmount={data.ge6.amount} voteCount={data.ge6.transactions}/>
         <section className="records"><h2 className="section-title">ประวัติการโหวตงานเก่า</h2><div className="tabs" role="tablist" aria-label="ข้อมูลโหวต"><button id="history-tab" role="tab" aria-selected={tab==='history'} aria-controls="records-panel" onClick={()=>setTab('history')}>ประวัติแต่ละงาน <span>{data.events.length}</span></button><button id="transactions-tab" role="tab" aria-selected={tab==='transactions'} aria-controls="records-panel" onClick={()=>setTab('transactions')}>รายการโหวต <span>{data.transactionCount.toLocaleString()}</span></button></div>
         <div id="records-panel" role="tabpanel" aria-labelledby={tab==='history'?'history-tab':'transactions-tab'}>{tab==='history'?<>{data.events.length===0?<div className="empty-records">ไม่พบประวัติโหวตงานก่อน ๆ ของ address นี้ในฐานข้อมูล</div>:data.events.map((event,i)=><article className="event" key={event.event}><div className="event-heading"><span className="event-number">{String(i+1).padStart(2,'0')}</span><div><h3>{event.event}</h3><p>{event.members.length} เมมเบอร์ / รายการที่ได้รับโหวต</p></div><div className="event-total"><strong>{display(event.total)}</strong><span>tokens รวม</span></div></div><div className="member-list">{event.members.map(m=><div className="member" key={m.member}><div className="member-avatar">{m.member.slice(0,1)}</div><span className="member-name">{m.member}</span><span className="tx-count">{m.transactions.toLocaleString()} รายการ</span><strong>{display(m.amount)} <small>tokens</small></strong></div>)}</div></article>)}</>:<><TransactionTable rows={data.transactions} /><p className="muted small table-caption">แสดง {data.transactions.length.toLocaleString()} รายการล่าสุด จากทั้งหมด {data.transactionCount.toLocaleString()} รายการ</p></>}</div></section>
       </>:<Ge6VotersTable/>}
