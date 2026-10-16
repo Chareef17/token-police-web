@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
-import { forgetAll } from '@/lib/client-cache';
-// Reload the current URL so both server-rendered and client-fetched pages read fresh data.
+import { usePathname,useRouter } from 'next/navigation';
+import { forgetAll,refreshEvent } from '@/lib/client-cache';
 export default function RefreshButton(){
+  const pathname=usePathname(),router=useRouter();
   const [refreshing,setRefreshing]=useState(false);
   const [error,setError]=useState('');
   const [progress,setProgress]=useState('กำลังตรวจธุรกรรม GE6…');
@@ -42,9 +43,9 @@ export default function RefreshButton(){
         }
       }
       forgetAll();
-      const url=new URL(window.location.href);
-      url.searchParams.set('fresh','1');
-      window.location.replace(url.href);
+      window.dispatchEvent(new Event(refreshEvent));
+      if(pathname!=='/')router.refresh();
+      setRefreshing(false);
     }catch(caught){
       setError(caught instanceof Error?caught.message:'ซิงก์ข้อมูลไม่สำเร็จ');
       setRefreshing(false);

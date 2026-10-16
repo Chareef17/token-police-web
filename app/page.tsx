@@ -18,7 +18,7 @@ function Icon({kind}:{kind:'search'|'shield'|'copy'|'external'|'wallet'}){return
 export default function Home(){
   const router=useRouter();
   const [input,setInput]=useState('');const [data,setData]=useState<Wallet|null>(null);const [balance,setBalance]=useState<Balance|null>(null);
-  const [loading,setLoading]=useState(false);const [balanceLoading,setBalanceLoading]=useState(false);const [error,setError]=useState('');const [balanceError,setBalanceError]=useState('');
+  const [loading,setLoading]=useState(false);const [walletRefreshing,setWalletRefreshing]=useState(false);const [balanceLoading,setBalanceLoading]=useState(false);const [error,setError]=useState('');const [balanceError,setBalanceError]=useState('');
   const [editing,setEditing]=useState(false);const [name,setName]=useState('');const [saving,setSaving]=useState(false);const [notice,setNotice]=useState('');const [nameError,setNameError]=useState('');const [tab,setTab]=useState<'history'|'transactions'>('history');
   const [editingVote,setEditingVote]=useState<Transaction|null>(null);
   const serial=useRef(0);
@@ -55,13 +55,25 @@ export default function Home(){
   async function loadBalance(address:string,id:number,fresh:boolean){setBalanceLoading(true);setBalanceError('');try{const result=await cachedJson<Balance>('/api/balances/'+address+(fresh?'?fresh=1':''),{fresh});if(serial.current===id)setBalance(result);}catch(e){if(serial.current===id)setBalanceError(e instanceof Error?e.message:'อ่านยอดเหรียญไม่ได้');}finally{if(serial.current===id)setBalanceLoading(false);}}
   async function search(value:string,fresh=false){
     const address=value.trim().toLowerCase();if(!/^0x[0-9a-f]{40}$/.test(address)){setError('กรุณากรอก address ที่ขึ้นต้นด้วย 0x ให้ครบ 42 ตัวอักษร');return;}
-    const id=++serial.current;setInput(address);setLoading(true);setError('');setData(null);setBalance(null);setBalanceError('');setEditing(false);setEditingVote(null);setNotice('');setTab('history');
+    const id=++serial.current;setInput(address);setLoading(true);setWalletRefreshing(false);setError('');setData(null);setBalance(null);setBalanceError('');setEditing(false);setEditingVote(null);setNotice('');setTab('history');
     window.history.replaceState(window.history.state,'',`/?address=${address}`);
     void loadBalance(address,id,fresh);
     try{const result=await cachedJson<Wallet>('/api/wallet/'+address,{fresh});if(serial.current===id)setData(result);}catch(e){if(serial.current===id)setError(e instanceof Error?e.message:'ค้นหาไม่สำเร็จ');}finally{if(serial.current===id)setLoading(false);}
   }
+  async function refreshCurrent(){
+    const address=new URLSearchParams(window.location.search).get('address')?.toLowerCase();
+    if(!address||!/^0x[0-9a-f]{40}$/.test(address))return;
+    const id=serial.current;
+    setWalletRefreshing(true);setError('');
+    void loadBalance(address,id,true);
+    try{
+      const result=await cachedJson<Wallet>('/api/wallet/'+address,{fresh:true});
+      if(serial.current===id)setData(current=>current?.address===address?result:current);
+    }catch(e){if(serial.current===id)setError(e instanceof Error?e.message:'โหลดข้อมูลใหม่ไม่สำเร็จ');}
+    finally{if(serial.current===id)setWalletRefreshing(false);}
+  }
   useEffect(()=>{const params=new URLSearchParams(window.location.search);const value=params.get('address');if(value)void search(value,params.get('fresh')==='1');},[]);
-  useEffect(()=>{const reload=()=>{const value=new URLSearchParams(window.location.search).get('address');if(value)void search(value,true);};window.addEventListener(refreshEvent,reload);return ()=>window.removeEventListener(refreshEvent,reload);},[]);
+  useEffect(()=>{const reload=()=>void refreshCurrent();window.addEventListener(refreshEvent,reload);return ()=>window.removeEventListener(refreshEvent,reload);},[]);
   async function saveName(event:FormEvent){event.preventDefault();if(!data)return;const id=serial.current;setSaving(true);setNameError('');try{const r=await fetch('/api/names',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({address:data.address,name,version:data.name?.version||0})});const result=await r.json();if(!r.ok)throw new Error(result.error);if(serial.current===id){forget('/api/wallet/'+data.address);setData({...data,name:result});setEditing(false);setNotice('บันทึกชื่อแล้ว ทุกคนจะเห็นชื่อนี้');}}catch(e){if(serial.current===id)setNameError(e instanceof Error?e.message:'บันทึกไม่สำเร็จ');}finally{setSaving(false);}}
   const stale=!!data && (data.ge6Status?.phase==='error'||!data.ge6Status?.lastSuccess||Date.now()-Date.parse(data.ge6Status.lastSuccess)>20*60000);
   return <div className="shell">
@@ -74,7 +86,7 @@ export default function Home(){
         {error&&<p className="error" role="alert">{error}</p>}
       </section>
       {loading?<section className="loading-panel" role="status"><span className="spinner"/> กำลังค้นหาประวัติโหวต…</section>:data?<>
-        <section className="wallet-heading"><div><div className="eyebrow">WALLET PROFILE</div><div className="name-row"><h2>{data.name?.name||'กระเป๋าที่ยังไม่มีชื่อ'}</h2><button className="text-button" onClick={()=>{setName(data.name?.name||'');setNameError('');setEditing(!editing);}}>{editing?'ยกเลิก':data.name?'แก้ไขชื่อ':'＋ ตั้งชื่อ'}</button></div><div className="address-row"><AddressCopy address={data.address} full/><a aria-label="ดู address บน TokenX Scan" className="icon-button" href={`https://scan.tokenx.finance/address/${data.address}`} target="_blank" rel="noreferrer"><Icon kind="external"/></a></div></div><button className="secondary refresh" onClick={()=>void search(data.address,true)}>โหลดข้อมูลใหม่</button></section>
+        <section className="wallet-heading"><div><div className="eyebrow">WALLET PROFILE</div><div className="name-row"><h2>{data.name?.name||'กระเป๋าที่ยังไม่มีชื่อ'}</h2><button className="text-button" onClick={()=>{setName(data.name?.name||'');setNameError('');setEditing(!editing);}}>{editing?'ยกเลิก':data.name?'แก้ไขชื่อ':'＋ ตั้งชื่อ'}</button></div><div className="address-row"><AddressCopy address={data.address} full/><a aria-label="ดู address บน TokenX Scan" className="icon-button" href={`https://scan.tokenx.finance/address/${data.address}`} target="_blank" rel="noreferrer"><Icon kind="external"/></a></div></div><button className="secondary refresh" disabled={walletRefreshing} onClick={()=>window.dispatchEvent(new Event(refreshEvent))}>{walletRefreshing?'กำลังอัปเดต…':'โหลดข้อมูลใหม่'}</button></section>
         {editing&&<form className="name-form" onSubmit={saveName}><label htmlFor="name">ชื่อ</label><div><input id="name" value={name} onChange={e=>setName(e.target.value)} maxLength={60} autoFocus placeholder="ตั้งชื่อให้กระเป๋านี้" required/><button className="primary" disabled={saving}>{saving?'กำลังบันทึก…':'บันทึกชื่อ'}</button></div><p className="muted small">ไม่เกิน 60 ตัวอักษร</p>{nameError&&<p className="error" role="alert">{nameError}</p>}</form>}
         <p className="notice" aria-live="polite">{notice}</p>
         <ManualPredictions address={data.address} initial={data.manualPrediction} onSaved={value=>{forget('/api/wallet/'+data.address);setData(current=>current?.address===data.address?{...current,manualPrediction:value}:current);}}/>

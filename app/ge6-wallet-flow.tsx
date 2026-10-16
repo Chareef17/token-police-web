@@ -84,8 +84,8 @@ export default function Ge6WalletFlow({address,name,votedAmount,voteCount}:{addr
   const flow=useMemo(()=>summarizeGe6Flow(rows,address),[rows,address]);
   const received=sum(flow.incoming.map(edge=>edge.amount));
   const transferred=sum(flow.outgoing.map(edge=>edge.amount));
-  return <section className="wallet-flow" aria-label="เส้นทางเหรียญ GE6">
-    <div className="wallet-flow-header"><div><span className="flow-kicker">GE6 FLOW</span><h2>เส้นทางเหรียญ GE6</h2></div><span className={complete?'flow-scan-state complete':'flow-scan-state'}>{complete?`ครบ ${pages.toLocaleString()} หน้า`:error?'ข้อมูลบางส่วน':`กำลังสแกน · ${pages.toLocaleString()} หน้า`}</span></div>
+  return <section className="wallet-flow" aria-label="GE6 Token Flow">
+    <div className="wallet-flow-header"><div><span className="flow-kicker">GE6</span><h2>GE6 Token Flow</h2></div><span className={complete?'flow-scan-state complete':'flow-scan-state'}>{complete?`ครบ ${pages.toLocaleString()} หน้า`:error?'ข้อมูลบางส่วน':`กำลังสแกน · ${pages.toLocaleString()} หน้า`}</span></div>
     <div className="flow-totals"><div><span>รับเข้า</span><strong title={received}>{display(received)}</strong></div><div><span>โอนต่อ</span><strong title={transferred}>{display(transferred)}</strong></div><div><span>ใช้โหวต</span><strong title={votedAmount}>{display(votedAmount)}</strong></div></div>
     {!complete&&!error&&<div className="flow-progress" role="status"><span className="spinner" aria-hidden="true"/>กำลังไล่ประวัติการโอนตั้งแต่ล่าสุดถึงรายการแรก…</div>}
     {error&&<div className="flow-error" role="alert">{error} · ยอดรับและโอนที่เห็นยังไม่ครบ <button type="button" onClick={()=>setRetry(value=>value+1)}>ลองใหม่</button></div>}
