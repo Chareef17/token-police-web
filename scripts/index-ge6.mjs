@@ -14,7 +14,7 @@ async function assertLease(){const lease=(await db.execute('SELECT owner,expires
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{stopping=true;});
 try{
   do{
-    try{const status=await poll(db,transport,{assertLease,onProgress:progress=>console.log(JSON.stringify({sync:progress}))});console.log(JSON.stringify(status));}
+    try{const status=await poll(db,transport,{assertLease,skipScheduledAudit:!process.argv.includes('--audit'),onProgress:progress=>console.log(JSON.stringify({sync:progress}))});console.log(JSON.stringify(status));}
     catch(error){if(!stopping){console.error(String(error));if(!leaseLost)await markError(db,error);if(!process.argv.includes('--watch'))process.exitCode=1;}}
     if(leaseLost)break;
     if(process.argv.includes('--watch')&&!stopping)for(let i=0;i<10&&!stopping;i++)await new Promise(resolve=>setTimeout(resolve,1000));

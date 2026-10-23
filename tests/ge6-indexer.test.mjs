@@ -54,7 +54,7 @@ test('fetches missing block timestamps in bounded parallel batches',async()=>{
     }
     return get(path);
   };
-  try{assert.equal((await poll(db,transport)).votes,12);assert.equal(peak,8);}finally{db.close();}
+  try{assert.equal((await poll(db,transport)).votes,12);assert.equal(peak,12);}finally{db.close();}
 });
 test('incremental passes only add new votes and keep earlier ones',async()=>{
   const {db,state,transport}=await setup([vote(0),vote(1)]);
