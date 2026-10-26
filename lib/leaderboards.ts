@@ -60,9 +60,10 @@ export async function nammonnFans(){
   const historicalFans=await fanList();
   const existing=new Set(historicalFans.map(f=>f.address));
   const db=await database();
-  const [voteRows,manualRows]=await db.batch([
+  const [voteRows,manualRows,assignedRows]=await db.batch([
     {sql:'SELECT address,event,member,amount FROM votes WHERE event IN (?,?,?) AND address IS NOT NULL',args:['GE5','Thai-Japan 2026','Thai-Chinese 2025']},
     'SELECT address,rank1 FROM manual_predictions WHERE rank1 IS NOT NULL',
+    {sql:'SELECT e.address,e.amount FROM ge6_vote_assignments a JOIN ge6_events e ON e.tx_hash=a.tx_hash AND e.log_index=a.log_index WHERE a.member=? AND e.address IS NOT NULL',args:['Nammonn']},
   ],'read');
   const scores=new Map<string,Map<string,bigint>>();
   for(const row of voteRows.rows){
@@ -81,7 +82,19 @@ export async function nammonnFans(){
     additional.push({address,events:{},total:'0'});
   }
   additional.sort((a,b)=>{const left=scores.get(a.address)?.get('Nammonn')??0n,right=scores.get(b.address)?.get('Nammonn')??0n;return left===right?a.address.localeCompare(b.address):left>right?-1:1;});
-  const fans=[...historicalFans,...additional];
+  // Explicitly identified GE6 votes are stronger evidence than a historical
+  // prediction. Add their wallets after the existing fan list, only once.
+  const listed=new Set([...existing,...additional.map(f=>f.address)]);
+  const assignedTotals=new Map<string,bigint>();
+  for(const row of assignedRows.rows){
+    const address=String(row.address).toLowerCase();
+    if(!/^0x[0-9a-f]{40}$/.test(address)||officialWallets.has(address))continue;
+    assignedTotals.set(address,(assignedTotals.get(address)??0n)+units(String(row.amount)));
+  }
+  const newlyIdentified=[...assignedTotals].filter(([address])=>!listed.has(address))
+    .sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1)
+    .map(([address]):FanBase=>({address,events:{},total:'0'}));
+  const fans=[...historicalFans,...additional,...newlyIdentified];
   if(!fans.length)return [] as Fan[];
   const addresses=fans.map(f=>f.address);
   const [details,ge6Rows]=await Promise.all([
