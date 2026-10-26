@@ -495,3 +495,6 @@ a.member-avatar-item:focus-visible{outline:2px solid var(--accent);outline-offse
 @media(max-width:900px){.flow-diagram{grid-template-columns:minmax(0,1fr) 175px minmax(0,1fr);gap:12px}.flow-center::before,.flow-center::after{width:12px}.flow-edge-foot{flex-wrap:wrap}}
 @media(max-width:700px){.wallet-flow{padding:17px;border-radius:17px}.wallet-flow-header h2{font-size:21px}.flow-diagram{grid-template-columns:minmax(0,1fr);gap:16px}.flow-edge-foot{flex-wrap:nowrap}.flow-totals>div{padding:10px}.flow-totals strong{font-size:16px}}
 @media(max-width:410px){.flow-totals{gap:6px}.flow-totals>div{padding:8px}.flow-totals span{font-size:10px}.flow-totals strong{font-size:14px}.flow-scan-state{font-size:10px}}
+
+/* Member page: wallets counted from held GE6/BNK only. */
+.held-only-note{display:block;font-size:.72rem;font-weight:500;color:var(--muted,#6b7a90);white-space:nowrap}
