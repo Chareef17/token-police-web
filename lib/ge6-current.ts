@@ -154,9 +154,26 @@ async function calculateRanking(mode:RankingMode='votes') {
     allocated:amount(allocated),unassigned:amount(unassigned),votedTotal:amount(votedTotal),trackedTotal:amount(trackedTotal),untrackedTotal:amount(untrackedTotal),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),voteSyncedAt:ge6Status?.lastSuccess??null,chainVoteCount:Number(ge6Status?.votes??0),assignmentRevision:Number(freshness.ge6AssignmentRevision??0),ge6HoldersAt,bnkHoldersAt,syncError:ge6Status?.phase==='error',fetchedAt:new Date().toISOString()};
 }
 
+// Retry brief database drops once before giving up.
+async function withRetry<T>(run:()=>Promise<T>){
+  try{return await run();}
+  catch(error){console.error(error);await new Promise(resolve=>setTimeout(resolve,500));return run();}
+}
+
+// The live page refreshes itself on new votes; if a recompute still fails, keep showing
+// the last good ranking for that tab instead of replacing it with an error.
+const lastRanking=new Map<RankingMode,Omit<Awaited<ReturnType<typeof calculateRanking>>,'contributions'|'additions'|'heldAdditions'>>();
 export async function ge6CurrentRanking(mode:RankingMode='votes'){
-  const {contributions,additions,heldAdditions,...ranking}=await calculateRanking(mode);
-  return ranking;
+  try{
+    const {contributions,additions,heldAdditions,...ranking}=await withRetry(()=>calculateRanking(mode));
+    lastRanking.set(mode,ranking);
+    return ranking;
+  }catch(error){
+    const previous=lastRanking.get(mode);
+    if(!previous)throw error;
+    console.error(error);
+    return previous;
+  }
 }
 
 // The member wallet list covers every GE6 voter. Votes before the preliminary
@@ -224,7 +241,7 @@ async function allMemberVoters(name:string){
 }
 
 export async function ge6MemberProjection(name:string,page=1){
-  const [result,contributions]=await Promise.all([calculateRanking('votes'),allMemberVoters(name)]);
+  const [result,contributions]=await Promise.all([withRetry(()=>calculateRanking('votes')),withRetry(()=>allMemberVoters(name))]);
   const ranked=result.rows.find((row:{name:string})=>row.name===name);
   if(!ranked)return null;
   const pageSize=20,pages=Math.max(1,Math.ceil(contributions.length/pageSize));
