@@ -12,6 +12,25 @@ import preliminary from './ge6-prelim-2026-10-03.json';
 
 const events = ['GE5','Thai-Japan 2026','Thai-Chinese 2025'];
 const addressPattern = /^0x[0-9a-f]{40}$/;
+const assignedMembersSql="SELECT e.address,a.member,e.amount FROM ge6_vote_assignments a JOIN ge6_events e ON e.tx_hash=a.tx_hash AND e.log_index=a.log_index WHERE a.member<>''";
+const topThree=(scores:Map<string,bigint>)=>[...scores]
+  .sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1)
+  .slice(0,3).map(([name])=>name);
+
+// Members a wallet's transactions were assigned to by hand, by assigned amount (top 3).
+// Used for that wallet's remaining votes and holdings when it has no saved prediction.
+function assignedPreferences(rows:Record<string,unknown>[]){
+  const totals=new Map<string,Map<string,bigint>>();
+  for(const row of rows){
+    const member=ge6CandidateByName.get(String(row.member).toLowerCase());
+    if(!member)continue;
+    const address=String(row.address).toLowerCase();
+    const members=totals.get(address)??new Map<string,bigint>();
+    members.set(member,(members.get(member)??0n)+units(String(row.amount)));
+    totals.set(address,members);
+  }
+  return new Map([...totals].map(([address,members])=>[address,topThree(members)]));
+}
 
 async function calculateRanking(mode:RankingMode='votes') {
   const includeHoldings=mode!=='votes';
@@ -22,11 +41,13 @@ async function calculateRanking(mode:RankingMode='votes') {
   const ge6Status: {lastSuccess?:string;phase?:string;votes?:number}|null = JSON.parse(freshness.ge6Status??'null');
   const ge6HoldersAt: string|null = freshness.ge6HoldersAt?JSON.parse(freshness.ge6HoldersAt):null;
   const bnkHoldersAt: string|null = freshness.bnkHoldersAt?JSON.parse(freshness.bnkHoldersAt):null;
-  const [voteResult,assignmentResult,preliminaryAssignmentResult]=await db.batch([
+  const [voteResult,assignmentResult,preliminaryAssignmentResult,assignedMemberResult]=await db.batch([
     {sql:'SELECT tx_hash,log_index,address,amount,voted_at FROM ge6_events WHERE julianday(voted_at)>julianday(?)',args:[preliminary.cutoff]},
     {sql:'SELECT a.tx_hash,a.log_index,a.member FROM ge6_vote_assignments a JOIN ge6_events e ON e.tx_hash=a.tx_hash AND e.log_index=a.log_index WHERE julianday(e.voted_at)>julianday(?)',args:[preliminary.cutoff]},
     {sql:"SELECT a.member,e.amount FROM ge6_vote_assignments a JOIN ge6_events e ON e.tx_hash=a.tx_hash AND e.log_index=a.log_index WHERE julianday(e.voted_at)<=julianday(?) AND a.member<>''",args:[preliminary.cutoff]},
+    assignedMembersSql,
   ],'read');
+  const assignedChoices=assignedPreferences(assignedMemberResult.rows);
   const votes=voteResult.rows;
   const assignments=new Map(assignmentResult.rows.map(row=>[String(row.tx_hash)+':'+String(row.log_index),ge6CandidateByName.get(String(row.member).toLowerCase())]));
   const publishedNames=new Set((preliminary.results as [string,string][]).map(([name])=>name));
@@ -87,12 +108,9 @@ async function calculateRanking(mode:RankingMode='votes') {
   let allocated=0n,unassigned=0n,manualWallets=[...wallets.keys()].filter(address=>manual.has(address)).length;
   let heldAllocated=0n,heldUnassigned=0n;
   const bnkAdditions=new Map<string,bigint>();
-  const choicesFor=(address:string)=>{
-    const preferred=manual.get(address);
-    return preferred??[...(historical.get(address)??new Map())]
-      .sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1)
-      .slice(0,3).map(([name])=>name);
-  };
+  // What was set by hand wins: the saved prediction, then the members this wallet's
+  // transactions were assigned to; history is only the fallback.
+  const choicesFor=(address:string)=>manual.get(address)??assignedChoices.get(address)??topThree(historical.get(address)??new Map());
   for(const vote of assignedVotes){
     allocated+=vote.value;
     additions.set(vote.member,(additions.get(vote.member)??0n)+vote.value);
@@ -142,12 +160,14 @@ export async function ge6CurrentRanking(mode:RankingMode='votes'){
 // snapshot are shown here for discovery, but never added to the current ranking.
 async function allMemberVoters(name:string){
   const db=await database();
-  const [ge6Rows,historyRows,manualRows,assignmentRows]=await db.batch([
+  const [ge6Rows,historyRows,manualRows,assignmentRows,assignedMemberRows]=await db.batch([
     'SELECT tx_hash,log_index,address,amount FROM ge6_events WHERE address IS NOT NULL',
     {sql:`SELECT address,event,member,amount FROM votes WHERE event IN (?,?,?) AND address IN (SELECT address FROM ge6_events)`,args:events},
     'SELECT address,rank1,rank2,rank3 FROM manual_predictions WHERE address IN (SELECT address FROM ge6_events)',
     'SELECT tx_hash,log_index,member FROM ge6_vote_assignments',
+    assignedMembersSql,
   ],'read');
+  const assignedChoices=assignedPreferences(assignedMemberRows.rows);
   const totals=new Map<string,bigint>();
   const unassignedTotals=new Map<string,bigint>();
   const assignedContributions=new Map<string,bigint>();
@@ -177,9 +197,7 @@ async function allMemberVoters(name:string){
   }
   const matches:{address:string;votes:bigint;voted:bigint}[]=[];
   for(const [address,voted] of totals){
-    const choices=manual.get(address)??[...(history.get(address)??new Map<string,bigint>())]
-      .sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1)
-      .slice(0,3).map(([candidate])=>candidate);
+    const choices=manual.get(address)??assignedChoices.get(address)??topThree(history.get(address)??new Map<string,bigint>());
     const predicted=choices.includes(name)?splitVote(unassignedTotals.get(address)??0n,choices).find(entry=>entry[0]===name)?.[1]??0n:0n;
     const share=predicted+(assignedContributions.get(address)??0n);
     if(share>0n)matches.push({address,votes:share,voted});

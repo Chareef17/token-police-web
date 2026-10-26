@@ -44,17 +44,25 @@ export async function voterDetails(addresses:string[]):Promise<Map<string,VoterD
     const db=await database();
     const overall=new Map<string,Map<string,bigint>>();
     const likelyTotals=new Map<string,Map<string,bigint>>();
+    // Members this wallet's GE6 transactions were assigned to by hand.
+    const assigned=new Map<string,Map<string,bigint>>();
     for(let start=0;start<unique.length;start+=100){
       const slice=unique.slice(start,start+100),placeholders=slice.map(()=>'?').join(',');
-      const [nameRows,voteRows,manualRows]=await db.batch([
+      const [nameRows,voteRows,manualRows,assignedRows]=await db.batch([
         {sql:`SELECT address,name FROM names WHERE address IN (${placeholders})`,args:slice},
         {sql:`SELECT address,event,member,amount FROM votes WHERE event IN (${[...memberVoteEvents].map(()=>'?').join(',')}) AND address IN (${placeholders})`,args:[...memberVoteEvents,...slice]},
         {sql:`SELECT address,rank1,rank2,rank3 FROM manual_predictions WHERE address IN (${placeholders})`,args:slice},
+        {sql:`SELECT e.address,a.member,e.amount FROM ge6_vote_assignments a JOIN ge6_events e ON e.tx_hash=a.tx_hash AND e.log_index=a.log_index WHERE a.member<>'' AND e.address IN (${placeholders})`,args:slice},
       ],'read');
       for(const row of nameRows.rows)names.set(String(row.address).toLowerCase(),String(row.name));
       for(const row of manualRows.rows){
         const members=[row.rank1,row.rank2,row.rank3].filter(v=>v!=null).map(String);
         if(members.length>0)manual.set(String(row.address).toLowerCase(),members);
+      }
+      for(const row of assignedRows.rows){
+        const address=String(row.address).toLowerCase();
+        const members=assigned.get(address)??new Map<string,bigint>();assigned.set(address,members);
+        members.set(String(row.member),(members.get(String(row.member))??0n)+units(String(row.amount)));
       }
       for(const row of voteRows.rows){
         const address=String(row.address).toLowerCase(),event=String(row.event),member=String(row.member).trim();
@@ -72,7 +80,7 @@ export async function voterDetails(addresses:string[]):Promise<Map<string,VoterD
     const sorted=(entries:[string,bigint][])=>entries.sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1);
     for(const address of unique){
       const sortedVotes=sorted([...(overall.get(address)??new Map())]);
-      const likely=sorted([...(likelyTotals.get(address)??new Map())]).slice(0,3).map(([member])=>member);
+      const likely=sorted([...(assigned.get(address)??likelyTotals.get(address)??new Map())]).slice(0,3).map(([member])=>member);
       const topVote=sortedVotes[0]?.[0]??null;
       preferences.set(address,{likely,topVote});
     }
