@@ -63,7 +63,9 @@ async function calculateRanking(mode:RankingMode='votes') {
   const todayStartUtc=Math.floor((Date.now()+bangkokOffsetMs)/86400000)*86400000-bangkokOffsetMs;
   const {wallets,predictedWallets,todayWallets,assignedVotes,lastVoteAt}=partitionVoteEvents(votes,assignments,todayStartUtc);
   const heldBalances=await heldPromise;
-  const addresses = [...new Set([...wallets.keys(),...heldBalances.keys()])];
+  // BNK also counts for wallets with a saved prediction even if they never touched GE6.
+  const predictedOnly=mode==='all'?(await db.execute('SELECT address FROM manual_predictions')).rows.map(row=>String(row.address).toLowerCase()):[];
+  const addresses = [...new Set([...wallets.keys(),...heldBalances.keys(),...predictedOnly])];
   const bnkBalances=mode==='all'?await bnkHeldBalances(addresses):new Map<string,bigint>();
   const historical = new Map<string,Map<string,bigint>>();
   const manual = new Map<string,string[]>();
