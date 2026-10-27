@@ -87,9 +87,9 @@ export default function WalletTokenFlow({address,token='ge6',votedAmount='0',vot
   const received=sum(flow.incoming.map(edge=>edge.amount));
   const transferred=sum(flow.outgoing.map(edge=>edge.amount));
   return <section className="wallet-flow" aria-label={token==='bnk'?'BNK Token Flow':'GE6 Token Flow'}>
-    <div className="wallet-flow-header"><div><span className="flow-kicker">{token==='bnk'?'1 ก.ย. 2026 – ปัจจุบัน':'GE6'}</span><h2>{token==='bnk'?'BNK Token Flow':'GE6 Token Flow'}</h2></div><span className={complete?'flow-scan-state complete':'flow-scan-state'}>{complete?`ครบ ${pages.toLocaleString()} หน้า`:error?'ข้อมูลบางส่วน':`กำลังสแกน · ${pages.toLocaleString()} หน้า`}</span></div>
+    <div className="wallet-flow-header"><div><span className="flow-kicker">{token==='bnk'?'1 ม.ค. 2024 – ปัจจุบัน':'GE6'}</span><h2>{token==='bnk'?'BNK Token Flow':'GE6 Token Flow'}</h2></div><span className={complete?'flow-scan-state complete':'flow-scan-state'}>{complete?`ครบ ${pages.toLocaleString()} หน้า`:error?'ข้อมูลบางส่วน':`กำลังสแกน · ${pages.toLocaleString()} หน้า`}</span></div>
     <div className={token==='bnk'?'flow-totals flow-totals-two':'flow-totals'}><div><span>รับเข้า</span><strong title={received}>{display(received)}</strong></div><div><span>โอนออก</span><strong title={transferred}>{display(transferred)}</strong></div>{token==='ge6'&&<div><span>ใช้โหวต</span><strong title={votedAmount}>{display(votedAmount)}</strong></div>}</div>
-    {!complete&&!error&&<div className="flow-progress" role="status"><span className="spinner" aria-hidden="true"/>{token==='bnk'?'กำลังไล่ประวัติการโอนถึง 1 ก.ย. 2026…':'กำลังไล่ประวัติการโอนตั้งแต่ล่าสุดถึงรายการแรก…'}</div>}
+    {!complete&&!error&&<div className="flow-progress" role="status"><span className="spinner" aria-hidden="true"/>{token==='bnk'?'กำลังไล่ประวัติการโอนถึง 1 ม.ค. 2024…':'กำลังไล่ประวัติการโอนตั้งแต่ล่าสุดถึงรายการแรก…'}</div>}
     {error&&<div className="flow-error" role="alert">{error} · ยอดรับและโอนที่เห็นยังไม่ครบ <button type="button" onClick={()=>setRetry(value=>value+1)}>ลองใหม่</button></div>}
     <div className="flow-diagram">
       <EdgeGroup edges={flow.incoming} names={names} direction="in" token={token}/>
