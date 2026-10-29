@@ -498,7 +498,7 @@ a.member-avatar-item:focus-visible{outline:2px solid var(--accent);outline-offse
 
 /* Member page: wallets counted from held GE6/BNK only. */
 .held-only-note{display:block;font-size:.72rem;font-weight:500;color:var(--muted,#6b7a90);white-space:nowrap}
-.wallet-vote-after{display:inline-block;white-space:nowrap;color:var(--muted);font-size:clamp(13px,.34em,18px);font-weight:500;vertical-align:baseline}
+.wallet-vote-after{display:block;margin-top:6px;white-space:nowrap;color:var(--muted);font-size:clamp(13px,.34em,18px);font-weight:500;letter-spacing:0;line-height:1.4}
 .voter-vote-table th.vote-after,.voter-vote-table td.vote-after{padding-left:12px}
 .voter-vote-table td.vote-after a{color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
 @media(min-width:761px){
