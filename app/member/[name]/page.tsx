@@ -47,7 +47,7 @@ async function MemberContent({name,page}:{name:string;page:number}){
       <h2>กระเป๋าที่คาดว่าโหวตให้ {name}</h2>
       <p className="muted small">{data.walletCount.toLocaleString()} กระเป๋า</p>
       <div className="table-wrap responsive-card-table voter-vote-table" tabIndex={0} aria-label={`กระเป๋าที่คาดว่าโหวตให้ ${name}`}><table>
-        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดว่าโหวตให้ {name}</th><th className="num vote-total">GE6 โหวตแล้ว</th><th className="num vote-after" title="โหวตหลังผลด่วนแรก วันที่ 3 ต.ค. 2026 เวลา 12:00 น.">หลังด่วนแรก</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
+        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดว่าโหวตให้ {name}</th><th className="num vote-total">GE6 โหวตแล้ว</th><th className="num vote-after" title={`คาดว่าโหวตให้ ${name} หลังผลด่วนแรก วันที่ 3 ต.ค. 2026 เวลา 12:00 น.`}>หลังด่วนแรก</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.wallets.map((wallet,index)=>{const href='/?address='+wallet.address;return <tr key={wallet.address}>
           <td className="rank"><a href={href}>{(data.page-1)*20+index+1}</a></td>
           <td className="who"><div className="wallet-identity">{wallet.name&&<a href={href}><strong>{wallet.name}</strong></a>}<AddressCopy address={wallet.address} href={href}/></div></td>

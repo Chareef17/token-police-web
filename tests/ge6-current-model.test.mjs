@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { splitVote, makeRanking, snapshotTotal, partitionVoteEvents } from '../lib/ge6-current-model.mjs';
+import { splitVote, makeRanking, snapshotTotal, partitionVoteEvents, memberVoteShare } from '../lib/ge6-current-model.mjs';
+
+test('member post-preliminary share excludes a transaction assigned to another member',()=>{
+  assert.equal(memberVoteShare('Nammonn',100n,0n,['Nammonn','Kwan']),70n);
+  assert.equal(memberVoteShare('Nammonn',0n,0n,['Nammonn','Kwan']),0n);
+  assert.equal(memberVoteShare('Kwan',0n,100n,['Nammonn','Kwan']),100n);
+});
 import { units } from '../lib/amount.mjs';
 import preliminary from '../lib/ge6-prelim-2026-10-03.json' with {type:'json'};
 
