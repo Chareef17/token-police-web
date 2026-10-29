@@ -21,12 +21,12 @@ async function NammonnContent(){
     {!fans?<p className="error" role="alert">ยังโหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง</p>:!fans.length?<p className="muted">ยังไม่มีข้อมูล</p>:<>
       <p className="muted small">ทั้งหมด {fans.length.toLocaleString()} กระเป๋า</p>
       <div className="table-wrap responsive-card-table voter-vote-table" tabIndex={0} aria-label="ตารางสายเปย์น้ำมนต์"><table>
-        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num vote-total">GE6 โหวตแล้ว</th><th className="num vote-after" title="โหวตหลังผลด่วน 1 วันที่ 3 ต.ค. 2026 เวลา 12:00 น.">หลังด่วน 1</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
+        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num vote-total">GE6 โหวตแล้ว</th><th className="num vote-after" title="โหวตหลังผลด่วนแรก วันที่ 3 ต.ค. 2026 เวลา 12:00 น.">หลังด่วนแรก</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{fans.map((f,i)=>{const href='/?address='+f.address;return <tr key={f.address}>
           <td className="rank"><a href={href}>{i+1}</a></td>
           <td className="who"><div className="wallet-identity">{f.name&&<a href={href}><strong>{f.name}</strong></a>}<AddressCopy address={f.address} href={href}/></div></td>
           <td className="num vote-total" data-label="GE6 โหวตแล้ว"><a href={href}><strong>{display(f.voted)}</strong></a></td>
-          <td className="num vote-after" data-label="หลังด่วน 1"><a href={href}>{display(f.postVoted)}</a></td>
+          <td className="num vote-after" data-label="หลังด่วนแรก"><a href={href}>{display(f.postVoted)}</a></td>
           <td className="num" data-label="GE6 ถืออยู่"><a href={href}>{f.ge6===null?'—':display(f.ge6)}</a></td>
           <td className="num" data-label="BNK ถืออยู่"><a href={href}>{f.bnk===null?'—':display(f.bnk)}</a></td>
           <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร">{f.likely.length?<MemberAvatars names={f.likely}/>:<a href={href}>—</a>}</td>

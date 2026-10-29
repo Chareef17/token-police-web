@@ -42,12 +42,12 @@ export default function Ge6VotersTable(){
     <a className="voter-holder-link secondary" href="/ge6-holders">ดูผู้ถือ GE6 สูงสุด</a>
     {loading?<div className="loading-panel" role="status"><span className="spinner"/> กำลังโหลดอันดับ…</div>:error?<p className="error" role="alert">{error} <button className="text-button" onClick={()=>setRetry(r=>r+1)}>ลองใหม่</button></p>:data&&<>
       <div className="table-wrap responsive-card-table voter-vote-table" tabIndex={0} aria-label="ตารางอันดับผู้โหวต GE6"><table>
-        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num vote-total">GE6 โหวตแล้ว</th><th className="num vote-after" title="โหวตหลังผลด่วน 1 วันที่ 3 ต.ค. 2026 เวลา 12:00 น.">หลังด่วน 1</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
+        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num vote-total">GE6 โหวตแล้ว</th><th className="num vote-after" title="โหวตหลังผลด่วนแรก วันที่ 3 ต.ค. 2026 เวลา 12:00 น.">หลังด่วนแรก</th><th className="num">GE6 ถืออยู่</th><th className="num">BNK ถืออยู่</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.rows.map(row=>{const href='/?address='+row.address;return <tr key={row.address}>
           <td className="rank"><a href={href}>{row.rank}</a></td>
           <td className="who"><div className="wallet-identity">{row.name&&<a href={href}><strong>{row.name}</strong></a>}<AddressCopy address={row.address} href={href}/></div></td>
           <td className="num vote-total" data-label="GE6 โหวตแล้ว"><a href={href}><strong>{displayShort(row.voted)}</strong></a></td>
-          <td className="num vote-after" data-label="หลังด่วน 1"><a href={href}>{displayShort(row.postVoted)}</a></td>
+          <td className="num vote-after" data-label="หลังด่วนแรก"><a href={href}>{displayShort(row.postVoted)}</a></td>
           <td className="num" data-label="GE6 ถืออยู่"><a href={href}>{row.ge6===null?'—':displayShort(row.ge6)}</a></td>
           <td className="num" data-label="BNK ถืออยู่"><a href={href}>{row.bnk===null?'—':displayShort(row.bnk)}</a></td>
           <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร">{row.likely.length?<MemberAvatars names={row.likely}/>:<a href={href}>—</a>}</td>
