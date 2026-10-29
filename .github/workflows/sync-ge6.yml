@@ -31,3 +31,16 @@ jobs:
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      - name: Save preliminary 2 transaction and forecast snapshots
+        if: success()
+        run: |
+          if [ -z "$TURSO_DATABASE_URL" ]; then exit 0; fi
+          now=$(date -u +%s)
+          friday=$(date -u -d '2026-10-30 05:00:00' +%s)
+          saturday=$(date -u -d '2026-10-31 05:00:00' +%s)
+          end=$(date -u -d '2026-11-03 05:00:00' +%s)
+          if [ "$now" -ge "$friday" ] && [ "$now" -lt "$end" ]; then node scripts/snapshot-ge6.mjs 2026-10-30; fi
+          if [ "$now" -ge "$saturday" ] && [ "$now" -lt "$end" ]; then node scripts/snapshot-ge6.mjs 2026-10-31; fi
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
