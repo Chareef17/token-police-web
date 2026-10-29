@@ -1,7 +1,7 @@
 import { database } from './db';
 import { units, amount } from './amount.mjs';
 import { ge6CandidateByName, ge6CandidateNames } from './ge6-candidates';
-import { makeRanking, snapshotTotal, splitVote, partitionVoteEvents } from './ge6-current-model.mjs';
+import { makeRanking, snapshotTotal, splitVote, partitionVoteEvents, memberVoteShare } from './ge6-current-model.mjs';
 import { ge6HeldBalances, bnkHeldBalances } from './ge6-held-balances';
 import { tokens } from './token-holders.mjs';
 
@@ -189,7 +189,8 @@ async function allMemberVoters(name:string){
   ],'read');
   const assignedChoices=assignedPreferences(assignedMemberRows.rows);
   const totals=new Map<string,bigint>();
-  const postTotals=new Map<string,bigint>();
+  const postUnassignedTotals=new Map<string,bigint>();
+  const postAssignedContributions=new Map<string,bigint>();
   const preliminaryCutoff=Date.parse(preliminary.cutoff);
   const unassignedTotals=new Map<string,bigint>();
   const assignedContributions=new Map<string,bigint>();
@@ -198,10 +199,15 @@ async function allMemberVoters(name:string){
     const address=String(row.address).toLowerCase();if(!addressPattern.test(address))continue;
     const value=units(String(row.amount));
     totals.set(address,(totals.get(address)??0n)+value);
-    if(Date.parse(String(row.voted_at))>preliminaryCutoff)postTotals.set(address,(postTotals.get(address)??0n)+value);
+    const afterPreliminary=Date.parse(String(row.voted_at))>preliminaryCutoff;
     const assigned=assignments.get(String(row.tx_hash)+':'+String(row.log_index));
-    if(assigned===name)assignedContributions.set(address,(assignedContributions.get(address)??0n)+value);
-    else if(!assigned)unassignedTotals.set(address,(unassignedTotals.get(address)??0n)+value);
+    if(assigned===name){
+      assignedContributions.set(address,(assignedContributions.get(address)??0n)+value);
+      if(afterPreliminary)postAssignedContributions.set(address,(postAssignedContributions.get(address)??0n)+value);
+    }else if(!assigned){
+      unassignedTotals.set(address,(unassignedTotals.get(address)??0n)+value);
+      if(afterPreliminary)postUnassignedTotals.set(address,(postUnassignedTotals.get(address)??0n)+value);
+    }
   }
   const history=new Map<string,Map<string,bigint>>();
   for(const row of historyRows.rows){
@@ -221,9 +227,9 @@ async function allMemberVoters(name:string){
   const matches:{address:string;votes:bigint;voted:bigint;postVoted:bigint;held:bigint}[]=[];
   for(const [address,voted] of totals){
     const choices=manual.get(address)??assignedChoices.get(address)??topThree(history.get(address)??new Map<string,bigint>());
-    const predicted=choices.includes(name)?splitVote(unassignedTotals.get(address)??0n,choices).find(entry=>entry[0]===name)?.[1]??0n:0n;
-    const share=predicted+(assignedContributions.get(address)??0n);
-    if(share>0n)matches.push({address,votes:share,voted,postVoted:postTotals.get(address)??0n,held:0n});
+    const share=memberVoteShare(name,unassignedTotals.get(address)??0n,assignedContributions.get(address)??0n,choices);
+    const postShare=memberVoteShare(name,postUnassignedTotals.get(address)??0n,postAssignedContributions.get(address)??0n,choices);
+    if(share>0n)matches.push({address,votes:share,voted,postVoted:postShare,held:0n});
   }
   // Wallets predicted for this member that never voted GE6 but still hold GE6 or BNK.
   const holdersOnly=[...manual].filter(([address,members])=>members.includes(name)&&!totals.has(address));
