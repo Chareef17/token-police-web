@@ -524,3 +524,27 @@ a.member-avatar-item:focus-visible{outline:2px solid var(--accent);outline-offse
 [data-theme=dark] .report-table tbody tr.nammonn{background:#584629;color:#fff2d7}
 .report-snapshots-single{grid-template-columns:minmax(0,1fr);max-width:520px;margin-left:auto;margin-right:auto}
 @media(max-width:650px){.report-table{min-width:0}.report-table thead{display:none}.report-table tbody{display:block}.report-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;padding:14px 16px;border-bottom:1px solid var(--line)}.report-table tbody tr:last-child{border-bottom:0}.report-table tbody th,.report-table tbody td{display:block;padding:0;border:0}.report-table tbody th{grid-column:1/-1;font-size:17px}.report-table tbody td{font-size:13px}.report-table tbody td:nth-child(2):before{content:'อันดับจริง · ';color:var(--muted)}.report-table tbody td:nth-child(3):before{content:'คาดการณ์ · ';color:var(--muted)}.report-table tbody td:nth-child(4):before{content:'ต่าง · ';color:var(--muted)}.report-table tbody td:nth-child(5):before{content:'ช่วงคาดการณ์ · ';color:var(--muted)}}
+.member-wallet-cards{display:none}
+@media(max-width:760px){
+  .member-board .voter-vote-table{display:none}
+  .member-wallet-cards{display:flex;flex-direction:column;gap:10px}
+  .member-wallet-card{padding:12px;border:1px solid var(--line);border-radius:17px;background:var(--surface);box-shadow:0 3px 12px #1c6b9b0c}
+  .member-wallet-card-head{display:flex;align-items:center;gap:10px;min-width:0;margin-bottom:11px}
+  .member-wallet-card-rank{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:11px;background:#e0f0fc;color:#367eaf;font-size:21px;font-weight:700}
+  .member-wallet-card-identity{display:flex;flex-direction:column;min-width:0;flex:1}
+  .member-wallet-card-identity>a{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+  .member-wallet-card-identity strong{font-size:16px}
+  .member-wallet-card-identity .address-copy code{font-size:11px}
+  .member-wallet-card-avatar{flex:0 0 42px;width:42px;height:42px;object-fit:cover;border-radius:50%;border:2px solid var(--surface);box-shadow:0 2px 8px #1f7fc233}
+  .member-wallet-card-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+  .member-wallet-card-stats>div{display:flex;flex-direction:column;justify-content:space-between;min-width:0;min-height:74px;padding:8px 7px;border-radius:9px;background:#ecf6fd}
+  .member-wallet-card-stats span{color:var(--muted);font-size:10px;line-height:1.3;overflow-wrap:anywhere}
+  .member-wallet-card-stats strong{font-size:16px;line-height:1.2;font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .member-wallet-card-details{margin-top:7px;color:var(--muted);font-size:11px}
+  .member-wallet-card-details summary{cursor:pointer;width:max-content;padding:5px 0}
+  .member-wallet-card-details>div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+  .member-wallet-card-details strong{color:var(--text);font-weight:600;text-align:right}
+  .member-wallet-card-details .member-avatars{margin:0}
+  [data-theme=dark] .member-wallet-card-rank{background:#284d6d;color:#d7edff}
+  [data-theme=dark] .member-wallet-card-stats>div{background:#1b3550}
+}

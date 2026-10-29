@@ -16,6 +16,7 @@ export async function generateMetadata({params}:{params:Promise<{name:string}>})
   return {title:`${name??'เมมเบอร์'} — คุณนักสืบโตเฟ่อ`};
 }
 const date=(value:string|null)=>value?new Date(value).toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'}):'—';
+const dateTime=(value:string|null)=>value?new Date(value).toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 
 export default async function MemberPage({params,searchParams}:{params:Promise<{name:string}>;searchParams:Promise<{page?:string}>}){
   const name=ge6CandidateByName.get((await params).name.toLowerCase());
@@ -59,6 +60,22 @@ async function MemberContent({name,page}:{name:string;page:number}){
           <td className="last-activity" data-label="ล่าสุด"><a href={href}>{date(wallet.lastTxAt)}</a></td>
         </tr>;})}</tbody>
       </table></div>
+      <div className="member-wallet-cards" aria-label={`กระเป๋าที่คาดว่าโหวตให้ ${name}`}>
+        {data.wallets.map((wallet,index)=>{const href='/?address='+wallet.address;return <article className="member-wallet-card" key={wallet.address}>
+          <div className="member-wallet-card-head">
+            <a className="member-wallet-card-rank" href={href}>{(data.page-1)*20+index+1}</a>
+            <div className="member-wallet-card-identity">{wallet.name&&<a href={href}><strong>{wallet.name}</strong></a>}<AddressCopy address={wallet.address} href={href}/></div>
+            <img className="member-wallet-card-avatar" src={`/members/${name.toLowerCase()}.webp`} alt="" width={48} height={48} loading="lazy"/>
+          </div>
+          <div className="member-wallet-card-stats">
+            <div><span>GE6 โหวตแล้ว</span><strong>{displayShort(wallet.voted)}</strong></div>
+            <div><span>คาดว่าลงให้{name}<br/>หลังด่วนแรก</span><strong>{displayShort(wallet.postVoted)}</strong></div>
+            <div><span>GE6 ถืออยู่</span><strong>{wallet.ge6==null?'—':displayShort(wallet.ge6)}</strong></div>
+            <div><span>BNK ถืออยู่</span><strong>{wallet.bnk==null?'—':displayShort(wallet.bnk)}</strong></div>
+          </div>
+          <details className="member-wallet-card-details"><summary>ข้อมูลเพิ่มเติม</summary><div><span>คาดว่าโหวตให้ {name}</span><strong>{displayShort(wallet.heldOnly??wallet.contributionVotes)}</strong></div><div><span>น่าจะโหวตใคร</span>{wallet.likely.length?<MemberAvatars names={wallet.likely}/>:<span>—</span>}</div><div><span>เคยโหวตมากสุด</span><strong>{wallet.topVote??'—'}</strong></div><div><span>เคลื่อนไหวล่าสุด</span><strong>{dateTime(wallet.lastTxAt)}</strong></div></details>
+        </article>;})}
+      </div>
       {data.pages>1&&<nav className="voters-pagination" aria-label="หน้ากระเป๋า"><span>หน้า {data.page}/{data.pages}</span><div>{data.page>1&&<Link className="secondary" prefetch={false} href={data.page===2?base:`${base}?page=${data.page-1}`}>ก่อนหน้า</Link>}{data.page<data.pages&&<Link className="secondary" prefetch={false} href={`${base}?page=${data.page+1}`}>ถัดไป</Link>}</div></nav>}
     </>;
 }
