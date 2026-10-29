@@ -27,7 +27,7 @@ export default async function Page(){
   const nammonn=comparison?.rows.find(row=>row.name==='Nammonn');
   return <div className="shell"><SiteHeader/><main className="board current-board prelim2-report">
     <header className="report-heading"><h1>รายงานความแม่นของคาดการณ์</h1></header>
-    <div className="report-snapshots">{days.map(date=>{const snapshot=snapshots.find(item=>item.date===date);return <Link key={date} href={`/ge6-snapshot/${date}`} className="report-snapshot"><span>{dayLabel(date)} · 12:00 น.</span><strong>{snapshot?'บันทึกแล้ว':'รอบันทึก'}</strong>{snapshot&&<small>{snapshot.transactionCount.toLocaleString('en-US')} ธุรกรรม</small>}</Link>;})}</div>
+    {official.cutoffDate&&<div className="report-snapshots report-snapshots-single">{[official.cutoffDate].map(date=>{const snapshot=snapshots.find(item=>item.date===date);return <Link key={date} href={`/ge6-snapshot/${date}`} className="report-snapshot"><span>{dayLabel(date)} · 12:00 น.</span><strong>{snapshot?'บันทึกแล้ว':'รอบันทึก'}</strong>{snapshot&&<small>{snapshot.transactionCount.toLocaleString('en-US')} ธุรกรรม</small>}</Link>;})}</div>}
     {!official.ranking.length?<div className="snapshot-empty">รอประกาศอันดับผลด่วนสอง<small>เมื่อมีอันดับจริง รายงานจะเทียบกับ snapshot ของวันที่ใช้ตัดยอด โดยไม่ใช้คะแนนจริงที่ยังไม่ประกาศ</small></div>
     :!selected?<div className="snapshot-empty">รอ snapshot ของวันตัดยอด<small>ยังไม่สามารถสรุปความแม่นก่อนข้อมูลครบ</small></div>
     :!comparison?<p className="error" role="alert">ข้อมูลอันดับจริงไม่ตรงกับรายชื่อผู้สมัคร GE6 กรุณาตรวจสอบ</p>
