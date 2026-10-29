@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import SiteHeader from '../site-header';
 import AddressCopy from '../address-copy';
 import MemberAvatars from '../member-avatars';
+import WalletSummaryCards from '../wallet-summary-cards';
 import { nammonnFans } from '@/lib/leaderboards';
 import { displayShort as display } from '@/lib/amount.mjs';
 export const dynamic='force-dynamic';
@@ -34,6 +35,7 @@ async function NammonnContent(){
           <td className="last-activity" data-label="ล่าสุด"><a href={href}>{date(f.lastTxAt)}</a></td>
         </tr>;})}</tbody>
       </table></div>
+      <WalletSummaryCards rows={fans.map((fan,index)=>({rank:index+1,...fan}))}/>
     </>}
   </>;
 }

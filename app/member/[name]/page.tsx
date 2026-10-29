@@ -65,7 +65,7 @@ async function MemberContent({name,page}:{name:string;page:number}){
           <div className="member-wallet-card-head">
             <a className="member-wallet-card-rank" href={href}>{(data.page-1)*20+index+1}</a>
             <div className="member-wallet-card-identity">{wallet.name&&<a href={href}><strong>{wallet.name}</strong></a>}<AddressCopy address={wallet.address} href={href}/></div>
-            <img className="member-wallet-card-avatar" src={`/members/${name.toLowerCase()}.webp`} alt="" width={48} height={48} loading="lazy"/>
+            {wallet.likely.length>0&&<div className="member-wallet-card-likely" aria-label="น่าจะโหวตใคร"><MemberAvatars names={wallet.likely.slice(0,3)}/></div>}
           </div>
           <div className="member-wallet-card-stats">
             <div><span>GE6 โหวตแล้ว</span><strong>{displayShort(wallet.voted)}</strong></div>
@@ -73,7 +73,7 @@ async function MemberContent({name,page}:{name:string;page:number}){
             <div><span>GE6 ถืออยู่</span><strong>{wallet.ge6==null?'—':displayShort(wallet.ge6)}</strong></div>
             <div><span>BNK ถืออยู่</span><strong>{wallet.bnk==null?'—':displayShort(wallet.bnk)}</strong></div>
           </div>
-          <details className="member-wallet-card-details"><summary>ข้อมูลเพิ่มเติม</summary><div><span>คาดว่าโหวตให้ {name}</span><strong>{displayShort(wallet.heldOnly??wallet.contributionVotes)}</strong></div><div><span>น่าจะโหวตใคร</span>{wallet.likely.length?<MemberAvatars names={wallet.likely}/>:<span>—</span>}</div><div><span>เคยโหวตมากสุด</span><strong>{wallet.topVote??'—'}</strong></div><div><span>เคลื่อนไหวล่าสุด</span><strong>{dateTime(wallet.lastTxAt)}</strong></div></details>
+          <details className="member-wallet-card-details"><summary>ข้อมูลเพิ่มเติม</summary><div><span>คาดว่าโหวตให้ {name}</span><strong>{displayShort(wallet.heldOnly??wallet.contributionVotes)}</strong></div><div><span>เคยโหวตมากสุด</span><strong>{wallet.topVote??'—'}</strong></div><div><span>เคลื่อนไหวล่าสุด</span><strong>{dateTime(wallet.lastTxAt)}</strong></div></details>
         </article>;})}
       </div>
       {data.pages>1&&<nav className="voters-pagination" aria-label="หน้ากระเป๋า"><span>หน้า {data.page}/{data.pages}</span><div>{data.page>1&&<Link className="secondary" prefetch={false} href={data.page===2?base:`${base}?page=${data.page-1}`}>ก่อนหน้า</Link>}{data.page<data.pages&&<Link className="secondary" prefetch={false} href={`${base}?page=${data.page+1}`}>ถัดไป</Link>}</div></nav>}

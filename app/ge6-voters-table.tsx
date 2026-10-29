@@ -3,6 +3,7 @@ import { useEffect,useState } from 'react';
 import { displayShort } from '@/lib/amount.mjs';
 import AddressCopy from './address-copy';
 import MemberAvatars from './member-avatars';
+import WalletSummaryCards from './wallet-summary-cards';
 import { cachedJson, refreshEvent } from '@/lib/client-cache';
 type Row={rank:number;address:string;name:string|null;voted:string;postVoted:string;bnk:string|null;ge6:string|null;lastTxAt:string|null;likely:string[];topVote:string|null};
 type Board={rows:Row[];page:number;pages:number;total:number;fetchedAt:string};
@@ -55,6 +56,7 @@ export default function Ge6VotersTable(){
           <td className="last-activity" data-label="ล่าสุด"><a href={href}>{date(row.lastTxAt)}</a></td>
         </tr>;})}</tbody>
       </table></div>
+      <WalletSummaryCards rows={data.rows}/>
       <div className="voters-pagination"><span>ทั้งหมด {data.total.toLocaleString()} กระเป๋า · หน้า {data.page}/{data.pages}</span><div><button className="secondary" disabled={page<=1} onClick={()=>changePage(page-1)}>ก่อนหน้า</button><button className="secondary" disabled={page>=data.pages} onClick={()=>changePage(page+1)}>ถัดไป</button></div></div>
     </>}
   </section>;
