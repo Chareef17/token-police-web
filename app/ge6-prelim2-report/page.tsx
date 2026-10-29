@@ -26,8 +26,7 @@ export default async function Page(){
   try{if(selected&&official.ranking.length)comparison=compareRanks(selected.rows,official.ranking) as Comparison;}catch(error){console.error('GE6 preliminary 2 comparison failed',error);}
   const nammonn=comparison?.rows.find(row=>row.name==='Nammonn');
   return <div className="shell"><SiteHeader/><main className="board current-board prelim2-report">
-    <div className="forecast-heading"><h1>世界はどこまで青空なのか？</h1></div>
-    <header className="report-heading"><p className="snapshot-kicker">GE6 · ผลด่วนสอง</p><h2>รายงานความแม่นของคาดการณ์</h2><p>เทียบอันดับจริงกับตารางที่บันทึกไว้ ณ เวลาตัดยอด</p></header>
+    <header className="report-heading"><h1>รายงานความแม่นของคาดการณ์</h1></header>
     <div className="report-snapshots">{days.map(date=>{const snapshot=snapshots.find(item=>item.date===date);return <Link key={date} href={`/ge6-snapshot/${date}`} className="report-snapshot"><span>{dayLabel(date)} · 12:00 น.</span><strong>{snapshot?'บันทึกแล้ว':'รอบันทึก'}</strong>{snapshot&&<small>{snapshot.transactionCount.toLocaleString('en-US')} ธุรกรรม</small>}</Link>;})}</div>
     {!official.ranking.length?<div className="snapshot-empty">รอประกาศอันดับผลด่วนสอง<small>เมื่อมีอันดับจริง รายงานจะเทียบกับ snapshot ของวันที่ใช้ตัดยอด โดยไม่ใช้คะแนนจริงที่ยังไม่ประกาศ</small></div>
     :!selected?<div className="snapshot-empty">รอ snapshot ของวันตัดยอด<small>ยังไม่สามารถสรุปความแม่นก่อนข้อมูลครบ</small></div>
