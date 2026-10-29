@@ -2,6 +2,7 @@ import type { Client } from '@libsql/client';
 import { connect, initialize } from './database.mjs';
 import { sum } from './amount.mjs';
 import preliminary from './ge6-prelim-2026-10-03.json';
+const preliminaryCutoff=Date.parse(preliminary.cutoff);
 export type Vote = { id: string; event: string; member: string; amount: string; tx_hash: string | null; voted_at: string | null };
 let client: Promise<Client> | undefined;
 // One client per server instance; the schema is ensured once when it is first used.
@@ -31,11 +32,11 @@ export async function wallet(address: string) {
   const keys=recentGe6.map(row=>/^chain:(0x[0-9a-f]{64}):(\d+)$/i.exec(row.id)).filter((match):match is RegExpExecArray=>Boolean(match));
   const eventRows=keys.length?(await db.execute({sql:`SELECT e.tx_hash,e.log_index,a.member,a.version FROM ge6_events e LEFT JOIN ge6_vote_assignments a ON a.tx_hash=e.tx_hash AND a.log_index=e.log_index WHERE e.tx_hash IN (${keys.map(()=>'?').join(',')})`,args:keys.map(match=>match[1].toLowerCase())})).rows:[];
   const assignments=new Map(eventRows.map(row=>[String(row.tx_hash)+':'+String(row.log_index),{member:row.member?String(row.member):null,version:Number(row.version??0)}]));
-  const ge6Items=recentGe6.map(row=>{const match=/^chain:(0x[0-9a-f]{64}):(\d+)$/i.exec(row.id);const key=match?match[1].toLowerCase()+':'+match[2]:null;const assigned=key?assignments.get(key):null;return {...row,txHash:assigned&&match?match[1].toLowerCase():null,logIndex:assigned&&match?Number(match[2]):null,assignedMember:assigned?.member??null,assignmentVersion:assigned?.version??0,inPreliminary:row.voted_at!=null&&Date.parse(row.voted_at)<=Date.parse(preliminary.cutoff)};});
+  const ge6Items=recentGe6.map(row=>{const match=/^chain:(0x[0-9a-f]{64}):(\d+)$/i.exec(row.id);const key=match?match[1].toLowerCase()+':'+match[2]:null;const assigned=key?assignments.get(key):null;return {...row,txHash:assigned&&match?match[1].toLowerCase():null,logIndex:assigned&&match?Number(match[2]):null,assignedMember:assigned?.member??null,assignmentVersion:assigned?.version??0,inPreliminary:row.voted_at!=null&&Date.parse(row.voted_at)<=preliminaryCutoff};});
   const historical = rows.filter(r => r.event !== 'GE6');
   const named = name.rows[0];
   const manual=prediction.rows[0];
-  return { address, name: named ? { name: String(named.name), version: Number(named.version), updated_at: String(named.updated_at) } : null, manualPrediction:manual?{members:[manual.rank1,manual.rank2,manual.rank3].filter(v=>v!=null).map(String),version:Number(manual.version),updated_at:String(manual.updated_at)}:null, events, ge6: { amount: sum(ge6.map(r => r.amount)), transactions: ge6.length, items: ge6Items }, transactions: historical.slice(0, 100), transactionCount: historical.length, importedAt: metadata.importedAt, ge6Status: JSON.parse(metadata.ge6Status || 'null') };
+  return { address, name: named ? { name: String(named.name), version: Number(named.version), updated_at: String(named.updated_at) } : null, manualPrediction:manual?{members:[manual.rank1,manual.rank2,manual.rank3].filter(v=>v!=null).map(String),version:Number(manual.version),updated_at:String(manual.updated_at)}:null, events, ge6: { amount: sum(ge6.map(r => r.amount)), postAmount: sum(ge6.filter(r => r.voted_at!=null && Date.parse(r.voted_at)>preliminaryCutoff).map(r => r.amount)), transactions: ge6.length, items: ge6Items }, transactions: historical.slice(0, 100), transactionCount: historical.length, importedAt: metadata.importedAt, ge6Status: JSON.parse(metadata.ge6Status || 'null') };
 }
 export async function logSearch(address: string) {
   const now = new Date().toISOString();

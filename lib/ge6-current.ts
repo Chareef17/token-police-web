@@ -181,7 +181,7 @@ export async function ge6CurrentRanking(mode:RankingMode='votes'){
 async function allMemberVoters(name:string){
   const db=await database();
   const [ge6Rows,historyRows,manualRows,assignmentRows,assignedMemberRows]=await db.batch([
-    'SELECT tx_hash,log_index,address,amount FROM ge6_events WHERE address IS NOT NULL',
+    'SELECT tx_hash,log_index,address,amount,voted_at FROM ge6_events WHERE address IS NOT NULL',
     {sql:`SELECT address,event,member,amount FROM votes WHERE event IN (?,?,?) AND address IN (SELECT address FROM ge6_events)`,args:events},
     'SELECT address,rank1,rank2,rank3 FROM manual_predictions',
     'SELECT tx_hash,log_index,member FROM ge6_vote_assignments',
@@ -189,6 +189,8 @@ async function allMemberVoters(name:string){
   ],'read');
   const assignedChoices=assignedPreferences(assignedMemberRows.rows);
   const totals=new Map<string,bigint>();
+  const postTotals=new Map<string,bigint>();
+  const preliminaryCutoff=Date.parse(preliminary.cutoff);
   const unassignedTotals=new Map<string,bigint>();
   const assignedContributions=new Map<string,bigint>();
   const assignments=new Map(assignmentRows.rows.map(row=>[String(row.tx_hash)+':'+String(row.log_index),ge6CandidateByName.get(String(row.member).toLowerCase())]));
@@ -196,6 +198,7 @@ async function allMemberVoters(name:string){
     const address=String(row.address).toLowerCase();if(!addressPattern.test(address))continue;
     const value=units(String(row.amount));
     totals.set(address,(totals.get(address)??0n)+value);
+    if(Date.parse(String(row.voted_at))>preliminaryCutoff)postTotals.set(address,(postTotals.get(address)??0n)+value);
     const assigned=assignments.get(String(row.tx_hash)+':'+String(row.log_index));
     if(assigned===name)assignedContributions.set(address,(assignedContributions.get(address)??0n)+value);
     else if(!assigned)unassignedTotals.set(address,(unassignedTotals.get(address)??0n)+value);
@@ -215,12 +218,12 @@ async function allMemberVoters(name:string){
       .map(value=>ge6CandidateByName.get(String(value).toLowerCase())).filter((value):value is NonNullable<typeof value>=>Boolean(value));
     if(members.length)manual.set(String(row.address).toLowerCase(),members);
   }
-  const matches:{address:string;votes:bigint;voted:bigint;held:bigint}[]=[];
+  const matches:{address:string;votes:bigint;voted:bigint;postVoted:bigint;held:bigint}[]=[];
   for(const [address,voted] of totals){
     const choices=manual.get(address)??assignedChoices.get(address)??topThree(history.get(address)??new Map<string,bigint>());
     const predicted=choices.includes(name)?splitVote(unassignedTotals.get(address)??0n,choices).find(entry=>entry[0]===name)?.[1]??0n:0n;
     const share=predicted+(assignedContributions.get(address)??0n);
-    if(share>0n)matches.push({address,votes:share,voted,held:0n});
+    if(share>0n)matches.push({address,votes:share,voted,postVoted:postTotals.get(address)??0n,held:0n});
   }
   // Wallets predicted for this member that never voted GE6 but still hold GE6 or BNK.
   const holdersOnly=[...manual].filter(([address,members])=>members.includes(name)&&!totals.has(address));
@@ -233,7 +236,7 @@ async function allMemberVoters(name:string){
     }
     for(const [address,members] of holdersOnly){
       const share=splitVote(held.get(address)??0n,members).find(entry=>entry[0]===name)?.[1]??0n;
-      if(share>0n)matches.push({address,votes:0n,voted:0n,held:share});
+      if(share>0n)matches.push({address,votes:0n,voted:0n,postVoted:0n,held:share});
     }
   }
   // GE6 voters first by predicted votes, then holders-only wallets by their predicted holdings.
@@ -255,7 +258,7 @@ export async function ge6MemberProjection(name:string,page=1){
     postVotes:amount(result.additions.get(name)??0n),total:ranked.votedAmount,
     wallets:slice.map(item=>({address:item.address,name:details.get(item.address)?.name??null,
       contributionVotes:amount(item.votes),heldOnly:item.voted===0n?amount(item.held):null,
-      voted:amount(item.voted),ge6:details.get(item.address)?.ge6??null,bnk:details.get(item.address)?.bnk??null,
+      voted:amount(item.voted),postVoted:amount(item.postVoted),ge6:details.get(item.address)?.ge6??null,bnk:details.get(item.address)?.bnk??null,
       likely:details.get(item.address)?.likely??[],topVote:details.get(item.address)?.topVote??null,lastTxAt:details.get(item.address)?.lastTxAt??null})),
     page:current,pages,walletCount:contributions.length,fetchedAt:result.fetchedAt};
 }

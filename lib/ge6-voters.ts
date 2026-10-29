@@ -3,26 +3,32 @@ import { amount, units } from './amount.mjs';
 import { balances } from './balances';
 import { tokenxGet } from './tokenx-transport.mjs';
 import { ge6Candidates } from './ge6-candidates';
+import preliminary from './ge6-prelim-2026-10-03.json';
 
 const PAGE_SIZE=20;
 const memberVoteEvents=new Set(['GE3','GE4','GE5','Songkran 2024','365-Nichi 2024','Thai-Japan 2026','Thai-Chinese 2025']);
 const likelyVoteEvents=new Set(['GE5','Thai-Japan 2026','Thai-Chinese 2025']);
 const chinesePrice=6n;
 const otherPrice=68n;
-type Ranked={address:string;voted:string;rank:number};
+type Ranked={address:string;voted:string;postVoted:string;rank:number};
 type Activity={date:string|null};
 export type VoterDetails={name:string|null;bnk:string|null;ge6:string|null;lastTxAt:string|null;likely:string[];topVote:string|null};
 async function ranking(){
   return (async()=>{
-    const rows=(await (await database()).execute("SELECT address,amount FROM ge6_events WHERE address IS NOT NULL")).rows;
-    const totals=new Map<string,bigint>();
+    const rows=(await (await database()).execute("SELECT address,amount,voted_at FROM ge6_events WHERE address IS NOT NULL")).rows;
+    const totals=new Map<string,{voted:bigint;postVoted:bigint}>();
+    const cutoff=Date.parse(preliminary.cutoff);
     for(const row of rows){
       const address=String(row.address).toLowerCase();
       if(!/^0x[0-9a-f]{40}$/.test(address))continue;
-      totals.set(address,(totals.get(address)??0n)+units(String(row.amount)));
+      const current=totals.get(address)??{voted:0n,postVoted:0n};
+      const value=units(String(row.amount));
+      current.voted+=value;
+      if(Date.parse(String(row.voted_at))>cutoff)current.postVoted+=value;
+      totals.set(address,current);
     }
-    return [...totals].sort((a,b)=>a[1]===b[1]?a[0].localeCompare(b[0]):a[1]>b[1]?-1:1)
-      .map(([address,total],i)=>({address,voted:amount(total),rank:i+1}));
+    return [...totals].sort((a,b)=>a[1].voted===b[1].voted?a[0].localeCompare(b[0]):a[1].voted>b[1].voted?-1:1)
+      .map(([address,total],i)=>({address,voted:amount(total.voted),postVoted:amount(total.postVoted),rank:i+1}));
   })();
 }
 

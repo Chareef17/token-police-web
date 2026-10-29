@@ -3,6 +3,7 @@ import { amount, sum, units } from './amount.mjs';
 import { tokenxGet } from './tokenx-transport.mjs';
 import { voterDetails, type VoterDetails } from './ge6-voters';
 import { ge6Candidates } from './ge6-candidates';
+import preliminary from './ge6-prelim-2026-10-03.json';
 const GE6_TOKEN='0x2f5c60bde7a5ebd2b116bb03cb5232fa1ea55f1c';
 // Not fans: the GE6 voting contract, the treasury that received the whole mint, and every wallet the
 // treasury sent GE6 to directly (official distribution wallets), as traced on TokenX Scan in Oct 2026.
@@ -18,7 +19,7 @@ export const officialWallets=new Set([
 export const fanEvents=['GE5','Thai-Japan 2026'] as const;
 type FanEvent=typeof fanEvents[number];
 type FanBase={address:string;events:Partial<Record<FanEvent,{nammonn:string;top:boolean}>>;total:string};
-export type Fan=FanBase & VoterDetails & {voted:string};
+export type Fan=FanBase & VoterDetails & {voted:string;postVoted:string};
 export type Holder={rank:number;address:string;name:string|null;amount:string;contract:boolean};
 // Short in-memory cache per server instance: historical votes never change, balances move slowly.
 const cache=new Map<string,{until:number;value:Promise<unknown>}>();
@@ -99,14 +100,18 @@ export async function nammonnFans(){
   const addresses=fans.map(f=>f.address);
   const [details,ge6Rows]=await Promise.all([
     voterDetails(addresses),
-    db.execute({sql:`SELECT address,amount FROM ge6_events WHERE address IN (${addresses.map(()=>'?').join(',')})`,args:addresses}),
+    db.execute({sql:`SELECT address,amount,voted_at FROM ge6_events WHERE address IN (${addresses.map(()=>'?').join(',')})`,args:addresses}),
   ]);
   const voted=new Map<string,bigint>();
+  const postVoted=new Map<string,bigint>();
+  const cutoff=Date.parse(preliminary.cutoff);
   for(const row of ge6Rows.rows){
     const address=String(row.address).toLowerCase();
-    voted.set(address,(voted.get(address)??0n)+units(String(row.amount)));
+    const value=units(String(row.amount));
+    voted.set(address,(voted.get(address)??0n)+value);
+    if(Date.parse(String(row.voted_at))>cutoff)postVoted.set(address,(postVoted.get(address)??0n)+value);
   }
-  return fans.map(f=>({...f,...details.get(f.address)!,voted:amount(voted.get(f.address)??0n)}));
+  return fans.map(f=>({...f,...details.get(f.address)!,voted:amount(voted.get(f.address)??0n),postVoted:amount(postVoted.get(f.address)??0n)}));
 }
 // Top GE6 balances straight from TokenX (sorted by balance there).
 const holderList=async(limit:number)=>{
