@@ -47,13 +47,13 @@ async function MemberContent({name,page}:{name:string;page:number}){
       <h2>กระเป๋าที่คาดว่าโหวตให้ {name}</h2>
       <p className="muted small">{data.walletCount.toLocaleString()} กระเป๋า</p>
       <div className="table-wrap responsive-card-table voter-vote-table" tabIndex={0} aria-label={`กระเป๋าที่คาดว่าโหวตให้ ${name}`}><table>
-        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดว่าโหวตให้ {name}</th><th className="num vote-total">GE6 โหวตแล้ว</th><th className="num vote-after" title={`คาดว่าโหวตให้ ${name} หลังผลด่วนแรก วันที่ 3 ต.ค. 2026 เวลา 12:00 น.`}>หลังด่วนแรก</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
+        <thead><tr><th>#</th><th>กระเป๋า</th><th className="num">คาดว่าโหวตให้ {name}</th><th className="num vote-total">GE6 โหวตแล้ว</th><th className="num vote-after" title={`คาดว่าโหวตให้ ${name} หลังผลด่วนแรก วันที่ 3 ต.ค. 2026 เวลา 12:00 น.`}>คาดว่าโหวตให้ {name}<br/>หลังด่วนแรก</th><th className="vote-hint vote-hint-first">น่าจะโหวตใคร</th><th className="vote-hint">คนที่เคยโหวตมากที่สุด</th><th className="last-activity">เคลื่อนไหวล่าสุด</th></tr></thead>
         <tbody>{data.wallets.map((wallet,index)=>{const href='/?address='+wallet.address;return <tr key={wallet.address}>
           <td className="rank"><a href={href}>{(data.page-1)*20+index+1}</a></td>
           <td className="who"><div className="wallet-identity">{wallet.name&&<a href={href}><strong>{wallet.name}</strong></a>}<AddressCopy address={wallet.address} href={href}/></div></td>
           <td className="num" data-label={`คาดให้ ${name}`}><a href={href} title={wallet.heldOnly?'คาดจากเหรียญที่ถืออยู่':undefined}>{displayShort(wallet.heldOnly??wallet.contributionVotes)}</a>{wallet.heldOnly&&<span className="held-only-note">จากเหรียญที่ถือ</span>}</td>
           <td className="num vote-total" data-label="GE6 โหวตแล้ว"><a href={href}>{wallet.heldOnly?<>ยังไม่โหวต<span className="held-only-note">{[wallet.ge6&&Number(wallet.ge6)>0&&`GE6 ${displayShort(wallet.ge6)}`,wallet.bnk&&Number(wallet.bnk)>0&&`BNK ${displayShort(wallet.bnk)}`].filter(Boolean).join(' · ')}</span></>:displayShort(wallet.voted)}</a></td>
-          <td className="num vote-after" data-label="หลังด่วนแรก"><a href={href}>{displayShort(wallet.postVoted)}</a></td>
+          <td className="num vote-after" data-label={`คาดให้ ${name} หลังด่วนแรก`}><a href={href}>{displayShort(wallet.postVoted)}</a></td>
           <td className="vote-hint vote-hint-first" data-label="น่าจะโหวตใคร">{wallet.likely.length?<MemberAvatars names={wallet.likely}/>:<a href={href}>—</a>}</td>
           <td className="vote-hint" data-label="เคยโหวตมากสุด"><a href={href}>{wallet.topVote??'—'}</a></td>
           <td className="last-activity" data-label="ล่าสุด"><a href={href}>{date(wallet.lastTxAt)}</a></td>
