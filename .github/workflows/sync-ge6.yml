@@ -45,3 +45,32 @@ jobs:
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+  chain-backup:
+    if: github.event.schedule == '1,11,31 5 30,31 10 *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        day: ['2026-10-30','2026-10-31']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Save chain transactions without Turso
+        shell: bash
+        run: |
+          cutoff=$(date -u -d '${{ matrix.day }} 05:00:00' +%s)
+          if [ "$(date -u +%s)" -lt "$cutoff" ]; then exit 0; fi
+          node scripts/backup-ge6-chain.mjs '${{ matrix.day }}'
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ge6-chain-${{ matrix.day }}
+          path: snapshot-backup/ge6-transactions-${{ matrix.day }}.json
+          if-no-files-found: ignore
