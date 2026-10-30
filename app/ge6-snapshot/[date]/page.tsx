@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import SiteHeader from '@/app/site-header';
 import { database } from '@/lib/db';
 import { displayShort } from '@/lib/amount.mjs';
@@ -7,10 +7,7 @@ import { displayShort } from '@/lib/amount.mjs';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'บันทึกคาดการณ์ GE6 — คุณนักสืบโตเฟ่อ',robots:{index:false,follow:false}};
 
-const days:Record<string,{label:string;other:string}>={
-  '2026-10-30':{label:'ศุกร์ 30 ต.ค. 2026',other:'2026-10-31'},
-  '2026-10-31':{label:'เสาร์ 31 ต.ค. 2026',other:'2026-10-30'},
-};
+const day={label:'เสาร์ 31 ต.ค. 2026'};
 type RankingRow={name:string;rank:number;amount:string;bestRank:number;worstRank:number;published:boolean};
 type Forecast={rows:RankingRow[];votedTotal:string;postVoteTotal:string;allocated:string;unassigned:string;capturedAt:string};
 const tier=(rank:number)=>rank<=12?'senbatsu':rank<=24?'under':rank<=36?'next':'outside';
@@ -18,8 +15,7 @@ const tiers=[{key:'senbatsu',label:'Senbatsu · 1–12'},{key:'under',label:'Und
 
 export default async function Page({params}:{params:Promise<{date:string}>}){
   const {date}=await params;
-  const day=days[date];
-  if(!day)return <div className="shell"><SiteHeader/><main className="board current-board"><h1>ไม่พบวันที่นี้</h1></main></div>;
+  if(date!=='2026-10-31')notFound();
   let snapshot:{forecast:Forecast;transactions:number;cutoff:string}|null=null;
   try{
     const rows=(await (await database()).execute({sql:'SELECT cutoff,forecast,transaction_count FROM ge6_snapshots WHERE id=?',args:[date]})).rows;
@@ -27,7 +23,7 @@ export default async function Page({params}:{params:Promise<{date:string}>}){
   }catch(error){console.error('GE6 snapshot read failed',error);}
   return <div className="shell"><SiteHeader/><main className="board current-board snapshot-board">
     <div className="forecast-heading"><h1>世界はどこまで青空なのか？</h1></div>
-    <div className="snapshot-heading"><div><p className="snapshot-kicker">บันทึกคาดการณ์ GE6</p><h2>{day.label} · 12:00 น.</h2></div><Link href={`/ge6-snapshot/${day.other}`}>ดูวัน{date==='2026-10-30'?'เสาร์':'ศุกร์'} →</Link></div>
+    <div className="snapshot-heading"><div><p className="snapshot-kicker">บันทึกคาดการณ์ GE6</p><h2>{day.label} · 12:00 น.</h2></div></div>
     {!snapshot?<div className="snapshot-empty">ยังไม่มี snapshot ของวันนี้<br/><small>ตารางจะปรากฏหลังระบบบันทึกข้อมูล ณ เวลาเที่ยง</small></div>:<>
       <div className="snapshot-summary"><div><span>โหวตรวม ณ เวลานั้น</span><strong>{displayShort(snapshot.forecast.votedTotal)}</strong></div><div><span>คาดผู้รับได้หลังผลด่วนแรก</span><strong>{displayShort(snapshot.forecast.allocated)}</strong></div><div><span>ยังไม่ทราบผู้รับ</span><strong>{displayShort(snapshot.forecast.unassigned)}</strong></div><div><span>ธุรกรรมที่บันทึก</span><strong>{snapshot.transactions.toLocaleString('en-US')}</strong></div></div>
       <div className="snapshot-table-head" aria-hidden="true"><span>#</span><span>ชื่อ</span><span>คะแนนคาดการณ์</span><span>ช่วงอันดับ</span></div>

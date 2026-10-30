@@ -11,23 +11,22 @@ type ForecastRow={name:string;rank:number;amount:string;bestRank:number;worstRan
 type Snapshot={date:string;cutoff:string;capturedAt:string;rows:ForecastRow[];transactionCount:number};
 type ComparisonRow={name:string;actualRank:number;predictedRank:number;rankDifference:number;bestRank:number;worstRank:number;withinRange:boolean};
 type Comparison={rows:ComparisonRow[];compared:number;exact:number;withinRange:number;meanAbsoluteError:number|null};
-const days=['2026-10-30','2026-10-31'];
-const dayLabel=(date:string)=>date==='2026-10-30'?'ศุกร์ 30 ต.ค.':'เสาร์ 31 ต.ค.';
+const snapshotDate='2026-10-31';
 
 export default async function Page(){
   let snapshots:Snapshot[]=[];
   try{
-    const result=await (await database()).execute({sql:'SELECT id,cutoff,forecast,transaction_count FROM ge6_snapshots WHERE id IN (?,?) ORDER BY id',args:days});
+    const result=await (await database()).execute({sql:'SELECT id,cutoff,forecast,transaction_count FROM ge6_snapshots WHERE id=?',args:[snapshotDate]});
     snapshots=result.rows.map(row=>{const forecast=JSON.parse(String(row.forecast));return {date:String(row.id),cutoff:String(row.cutoff),capturedAt:forecast.capturedAt,rows:forecast.rows,transactionCount:Number(row.transaction_count)};});
   }catch(error){console.error('GE6 preliminary 2 report snapshot read failed',error);}
   const official=actual as {cutoffDate:string|null;announcedAt:string|null;source:string|null;ranking:string[]};
-  const selected=official.cutoffDate?snapshots.find(snapshot=>snapshot.date===official.cutoffDate):null;
+  const selected=official.cutoffDate===snapshotDate?snapshots[0]:null;
   let comparison:Comparison|null=null;
   try{if(selected&&official.ranking.length)comparison=compareRanks(selected.rows,official.ranking) as Comparison;}catch(error){console.error('GE6 preliminary 2 comparison failed',error);}
   const nammonn=comparison?.rows.find(row=>row.name==='Nammonn');
   return <div className="shell"><SiteHeader/><main className="board current-board prelim2-report">
     <header className="report-heading"><h1>รายงานความแม่นของคาดการณ์</h1></header>
-    {official.cutoffDate&&<div className="report-snapshots report-snapshots-single">{[official.cutoffDate].map(date=>{const snapshot=snapshots.find(item=>item.date===date);return <Link key={date} href={`/ge6-snapshot/${date}`} className="report-snapshot"><span>{dayLabel(date)} · 12:00 น.</span><strong>{snapshot?'บันทึกแล้ว':'รอบันทึก'}</strong>{snapshot&&<small>{snapshot.transactionCount.toLocaleString('en-US')} ธุรกรรม</small>}</Link>;})}</div>}
+    {official.cutoffDate===snapshotDate&&<div className="report-snapshots report-snapshots-single">{[snapshotDate].map(date=>{const snapshot=snapshots.find(item=>item.date===date);return <Link key={date} href={`/ge6-snapshot/${date}`} className="report-snapshot"><span>เสาร์ 31 ต.ค. · 12:00 น.</span><strong>{snapshot?'บันทึกแล้ว':'รอบันทึก'}</strong>{snapshot&&<small>{snapshot.transactionCount.toLocaleString('en-US')} ธุรกรรม</small>}</Link>;})}</div>}
     {!official.ranking.length?<div className="snapshot-empty">รอประกาศอันดับผลด่วนสอง<small>เมื่อมีอันดับจริง รายงานจะเทียบกับ snapshot ของวันที่ใช้ตัดยอด โดยไม่ใช้คะแนนจริงที่ยังไม่ประกาศ</small></div>
     :!selected?<div className="snapshot-empty">รอ snapshot ของวันตัดยอด<small>ยังไม่สามารถสรุปความแม่นก่อนข้อมูลครบ</small></div>
     :!comparison?<p className="error" role="alert">ข้อมูลอันดับจริงไม่ตรงกับรายชื่อผู้สมัคร GE6 กรุณาตรวจสอบ</p>
