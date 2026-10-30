@@ -26,12 +26,6 @@ jobs:
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-      - name: Holder balances snapshot (GE6 every run, BNK every 30 minutes)
-        if: always()
-        run: if [ -z "$TURSO_DATABASE_URL" ]; then echo "TURSO_DATABASE_URL secret is not set"; else pnpm sync:holders; fi
-        env:
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
       - name: Save preliminary 2 transaction and forecast snapshots
         if: success()
         run: |
@@ -42,6 +36,12 @@ jobs:
           end=$(date -u -d '2026-11-03 05:00:00' +%s)
           if [ "$now" -ge "$friday" ] && [ "$now" -lt "$end" ]; then node scripts/snapshot-ge6.mjs 2026-10-30; fi
           if [ "$now" -ge "$saturday" ] && [ "$now" -lt "$end" ]; then node scripts/snapshot-ge6.mjs 2026-10-31; fi
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+      - name: Holder balances snapshot (GE6 every run, BNK every 30 minutes)
+        if: always()
+        run: if [ -z "$TURSO_DATABASE_URL" ]; then echo "TURSO_DATABASE_URL secret is not set"; else pnpm sync:holders; fi
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
