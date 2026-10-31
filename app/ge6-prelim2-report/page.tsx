@@ -25,15 +25,14 @@ export default async function Page(){
   try{if(selected&&official.ranking.length)comparison=compareRanks(selected.rows,official.ranking) as Comparison;}catch(error){console.error('GE6 preliminary 2 comparison failed',error);}
   const nammonn=comparison?.rows.find(row=>row.name==='Nammonn');
   return <div className="shell"><SiteHeader/><main className="board current-board prelim2-report">
-    <header className="report-heading"><h1>รายงานความแม่นของคาดการณ์</h1></header>
+    <header className="report-heading"><h1>ผลด่วนสอง GE6</h1></header>
     {official.cutoffDate===snapshotDate&&<div className="report-snapshots report-snapshots-single">{[snapshotDate].map(date=>{const snapshot=snapshots.find(item=>item.date===date);return <Link key={date} href={`/ge6-snapshot/${date}`} className="report-snapshot"><span>เสาร์ 31 ต.ค. · 12:00 น.</span><strong>{snapshot?'บันทึกแล้ว':'รอบันทึก'}</strong>{snapshot&&<small>{snapshot.transactionCount.toLocaleString('en-US')} ธุรกรรม</small>}</Link>;})}</div>}
     {!official.ranking.length?<div className="snapshot-empty">รอประกาศอันดับผลด่วนสอง<small>เมื่อมีอันดับจริง รายงานจะเทียบกับ snapshot ของวันที่ใช้ตัดยอด โดยไม่ใช้คะแนนจริงที่ยังไม่ประกาศ</small></div>
     :!selected?<div className="snapshot-empty">รอ snapshot ของวันตัดยอด<small>ยังไม่สามารถสรุปความแม่นก่อนข้อมูลครบ</small></div>
     :!comparison?<p className="error" role="alert">ข้อมูลอันดับจริงไม่ตรงกับรายชื่อผู้สมัคร GE6 กรุณาตรวจสอบ</p>
     :<>
       <div className="report-metrics"><div><span>ตรงอันดับ</span><strong>{comparison.exact}/{comparison.compared}</strong></div><div><span>อยู่ในช่วงคาดการณ์</span><strong>{comparison.withinRange}/{comparison.compared}</strong></div><div><span>คลาดเคลื่อนเฉลี่ย</span><strong>{comparison.meanAbsoluteError?.toFixed(1)} อันดับ</strong></div>{nammonn&&<div className="report-nammonn"><span>★ Nammonn</span><strong>จริง #{nammonn.actualRank} · คาด #{nammonn.predictedRank}</strong></div>}</div>
-      <div className="report-table-wrap"><table className="report-table"><thead><tr><th>ชื่อ</th><th>อันดับจริง</th><th>คาดการณ์</th><th>ต่าง</th><th>ช่วงคาดการณ์</th></tr></thead><tbody>{comparison.rows.map(row=><tr key={row.name} className={row.name==='Nammonn'?'nammonn':''}><th>{row.name}{row.name==='Nammonn'&&' ★'}</th><td>#{row.actualRank}</td><td>#{row.predictedRank}</td><td>{row.rankDifference===0?'ตรง':row.rankDifference>0?`ดีกว่าคาด ${row.rankDifference}`:`ต่ำกว่าคาด ${Math.abs(row.rankDifference)}`}</td><td className={row.withinRange?'in-range':'out-range'}>{row.bestRank===row.worstRank?`#${row.bestRank}`:`#${row.bestRank}–${row.worstRank}`}{row.withinRange?' ✓':''}</td></tr>)}</tbody></table></div>
-      <p className="report-note">ผลด่วนสองประกาศเฉพาะอันดับ ตารางนี้จึงวัดความต่างของอันดับเท่านั้น ไม่สรุปคะแนนจริงจากอันดับ</p>
+      <div className="report-table-wrap"><table className="report-table"><thead><tr><th>อันดับจริง</th><th>เมมเบอร์</th><th>คาดไว้ตอนเที่ยง</th><th>เทียบกับที่คาด</th></tr></thead><tbody>{comparison.rows.map(row=><tr key={row.name} className={row.name==='Nammonn'?'nammonn':''}><td className="report-actual">{row.actualRank}</td><th>{row.name}{row.name==='Nammonn'&&' ★'}</th><td>#{row.predictedRank}</td><td className={row.rankDifference>0?'report-up':row.rankDifference<0?'report-down':'report-same'}>{row.rankDifference===0?'เท่าเดิม':row.rankDifference>0?`↑ สูงกว่าคาด ${row.rankDifference}`:`↓ ต่ำกว่าคาด ${Math.abs(row.rankDifference)}`}</td></tr>)}</tbody></table></div>
     </>}
   </main></div>;
 }
