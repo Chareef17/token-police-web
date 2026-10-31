@@ -3,13 +3,14 @@ import Link from 'next/link';
 import SiteHeader from '@/app/site-header';
 import { database } from '@/lib/db';
 import { compareRanks } from '@/lib/ge6-prelim2-analysis.mjs';
+import { displayShort } from '@/lib/amount.mjs';
 import actual from '@/lib/ge6-prelim2-results.json';
 
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'รายงานผลด่วนสอง GE6 — คุณนักสืบโตเฟ่อ',robots:{index:false,follow:false}};
 type ForecastRow={name:string;rank:number;amount:string;bestRank:number;worstRank:number};
 type Snapshot={date:string;cutoff:string;capturedAt:string;rows:ForecastRow[];transactionCount:number};
-type ComparisonRow={name:string;actualRank:number;predictedRank:number;rankDifference:number;bestRank:number;worstRank:number;withinRange:boolean};
+type ComparisonRow={name:string;actualRank:number;predictedRank:number;rankDifference:number;bestRank:number;worstRank:number;withinRange:boolean;predictedScore:string};
 type Comparison={rows:ComparisonRow[];compared:number;exact:number;withinRange:number;meanAbsoluteError:number|null};
 const snapshotDate='2026-10-31';
 
@@ -32,7 +33,7 @@ export default async function Page(){
     :!comparison?<p className="error" role="alert">ข้อมูลอันดับจริงไม่ตรงกับรายชื่อผู้สมัคร GE6 กรุณาตรวจสอบ</p>
     :<>
       <div className="report-metrics"><div><span>ตรงอันดับ</span><strong>{comparison.exact}/{comparison.compared}</strong></div><div><span>อยู่ในช่วงคาดการณ์</span><strong>{comparison.withinRange}/{comparison.compared}</strong></div><div><span>คลาดเคลื่อนเฉลี่ย</span><strong>{comparison.meanAbsoluteError?.toFixed(1)} อันดับ</strong></div>{nammonn&&<div className="report-nammonn"><span>★ Nammonn</span><strong>จริง #{nammonn.actualRank} · คาด #{nammonn.predictedRank}</strong></div>}</div>
-      <div className="report-table-wrap"><table className="report-table"><thead><tr><th>อันดับจริง</th><th>เมมเบอร์</th><th>คาดไว้ตอนเที่ยง</th><th>เทียบกับที่คาด</th></tr></thead><tbody>{comparison.rows.map(row=><tr key={row.name} className={row.name==='Nammonn'?'nammonn':''}><td className="report-actual">{row.actualRank}</td><th>{row.name}{row.name==='Nammonn'&&' ★'}</th><td>#{row.predictedRank}</td><td className={row.rankDifference>0?'report-up':row.rankDifference<0?'report-down':'report-same'}>{row.rankDifference===0?'เท่าเดิม':row.rankDifference>0?`↑ สูงกว่าคาด ${row.rankDifference}`:`↓ ต่ำกว่าคาด ${Math.abs(row.rankDifference)}`}</td></tr>)}</tbody></table></div>
+      <div className="report-table-wrap"><table className="report-table"><thead><tr><th>อันดับจริง</th><th>เมมเบอร์</th><th>คาดไว้ตอนเที่ยง</th><th>คะแนนคาด</th></tr></thead><tbody>{comparison.rows.map(row=><tr key={row.name} className={row.name==='Nammonn'?'nammonn':''}><td className="report-actual">{row.actualRank}</td><th>{row.name}{row.name==='Nammonn'&&' ★'}</th><td className={row.rankDifference>0?'report-predicted report-up':row.rankDifference<0?'report-predicted report-down':'report-predicted report-same'}><span aria-hidden="true">{row.rankDifference>0?'↑':row.rankDifference<0?'↓':'→'}</span> #{row.predictedRank}</td><td className="report-score">{displayShort(row.predictedScore)}</td></tr>)}</tbody></table></div>
     </>}
   </main></div>;
 }
