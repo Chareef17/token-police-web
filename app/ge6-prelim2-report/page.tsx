@@ -9,7 +9,7 @@ import actual from '@/lib/ge6-prelim2-results.json';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'รายงานผลด่วนสอง GE6 — คุณนักสืบโตเฟ่อ',robots:{index:false,follow:false}};
 type ForecastRow={name:string;rank:number;amount:string;bestRank:number;worstRank:number};
-type Snapshot={date:string;cutoff:string;capturedAt:string;rows:ForecastRow[];transactionCount:number};
+type Snapshot={date:string;cutoff:string;capturedAt:string;rows:ForecastRow[];transactionCount:number;unassigned:string};
 type ComparisonRow={name:string;actualRank:number;predictedRank:number;rankDifference:number;bestRank:number;worstRank:number;withinRange:boolean;predictedScore:string};
 type Comparison={rows:ComparisonRow[];compared:number;exact:number;withinRange:number;meanAbsoluteError:number|null};
 const snapshotDate='2026-10-31';
@@ -18,13 +18,18 @@ export default async function Page(){
   let snapshots:Snapshot[]=[];
   try{
     const result=await (await database()).execute({sql:'SELECT id,cutoff,forecast,transaction_count FROM ge6_snapshots WHERE id=?',args:[snapshotDate]});
-    snapshots=result.rows.map(row=>{const forecast=JSON.parse(String(row.forecast));return {date:String(row.id),cutoff:String(row.cutoff),capturedAt:forecast.capturedAt,rows:forecast.rows,transactionCount:Number(row.transaction_count)};});
+    snapshots=result.rows.map(row=>{const forecast=JSON.parse(String(row.forecast));return {date:String(row.id),cutoff:String(row.cutoff),capturedAt:forecast.capturedAt,rows:forecast.rows,transactionCount:Number(row.transaction_count),unassigned:forecast.unassigned};});
   }catch(error){console.error('GE6 preliminary 2 report snapshot read failed',error);}
   const official=actual as {cutoffDate:string|null;announcedAt:string|null;source:string|null;ranking:string[]};
   const selected=official.cutoffDate===snapshotDate?snapshots[0]:null;
   let comparison:Comparison|null=null;
   try{if(selected&&official.ranking.length)comparison=compareRanks(selected.rows,official.ranking) as Comparison;}catch(error){console.error('GE6 preliminary 2 comparison failed',error);}
   const nammonn=comparison?.rows.find(row=>row.name==='Nammonn');
+  const withinThree=comparison?.rows.filter(row=>Math.abs(row.rankDifference)<=3).length??0;
+  const tier=(rank:number)=>rank<=12?'Senbatsu':rank<=24?'Under Girls':rank<=36?'Next Girls':'นอก 36 อันดับ';
+  const sameTier=comparison?.rows.filter(row=>tier(row.actualRank)===tier(row.predictedRank)).length??0;
+  const biggestUp=comparison?.rows.filter(row=>row.rankDifference>0).sort((a,b)=>b.rankDifference-a.rankDifference).slice(0,3)??[];
+  const biggestDown=comparison?.rows.filter(row=>row.rankDifference<0).sort((a,b)=>a.rankDifference-b.rankDifference).slice(0,4)??[];
   return <div className="shell"><SiteHeader/><main className="board current-board prelim2-report">
     <header className="report-heading"><h1>ผลด่วนสอง GE6</h1></header>
     {official.cutoffDate===snapshotDate&&<div className="report-snapshots report-snapshots-single">{[snapshotDate].map(date=>{const snapshot=snapshots.find(item=>item.date===date);return <Link key={date} href={`/ge6-snapshot/${date}`} className="report-snapshot"><span>เสาร์ 31 ต.ค. · 12:00 น.</span><strong>{snapshot?'บันทึกแล้ว':'รอบันทึก'}</strong>{snapshot&&<small>{snapshot.transactionCount.toLocaleString('en-US')} ธุรกรรม</small>}</Link>;})}</div>}
@@ -33,6 +38,12 @@ export default async function Page(){
     :!comparison?<p className="error" role="alert">ข้อมูลอันดับจริงไม่ตรงกับรายชื่อผู้สมัคร GE6 กรุณาตรวจสอบ</p>
     :<>
       <div className="report-metrics"><div><span>ตรงอันดับ</span><strong>{comparison.exact}/{comparison.compared}</strong></div><div><span>อยู่ในช่วงคาดการณ์</span><strong>{comparison.withinRange}/{comparison.compared}</strong></div><div><span>คลาดเคลื่อนเฉลี่ย</span><strong>{comparison.meanAbsoluteError?.toFixed(1)} อันดับ</strong></div>{nammonn&&<div className="report-nammonn"><span>★ Nammonn</span><strong>จริง #{nammonn.actualRank} · คาด #{nammonn.predictedRank}</strong></div>}</div>
+      <section className="report-insights" aria-label="สรุปผลเทียบคาดการณ์">
+        <div><h2>ภาพรวม</h2><p><strong>{withinThree}/{comparison.compared}</strong> คนคลาดไม่เกิน 3 อันดับ และ <strong>{sameTier}/{comparison.compared}</strong> คนอยู่ในกลุ่มอันดับที่คาดไว้</p></div>
+        {nammonn&&<div><h2>★ Nammonn</h2><p>คาด <strong>#{nammonn.predictedRank}</strong> · จริง <strong>#{nammonn.actualRank}</strong> จาก {tier(nammonn.predictedRank)} มาอยู่ {tier(nammonn.actualRank)} คะแนนที่คาดไว้ <strong>{displayShort(nammonn.predictedScore)}</strong> GE6</p></div>}
+        <div><h2>จุดที่คลาดมาก</h2><p>สูงกว่าคาด: {biggestUp.map(row=>`${row.name} #${row.predictedRank}→#${row.actualRank}`).join(' · ')}</p><p>ต่ำกว่าคาด: {biggestDown.map(row=>`${row.name} #${row.predictedRank}→#${row.actualRank}`).join(' · ')}</p></div>
+      </section>
+      <p className="report-note">คะแนนในตารางเป็นคะแนนคาดการณ์ ณ 31 ต.ค. 12:00 น. ผลด่วนสองประกาศเฉพาะอันดับ และตอนทำสแนปช็อตยังมี {displayShort(selected.unassigned)} GE6 ที่ระบุผู้รับโหวตไม่ได้ จึงยังสรุปสาเหตุการขยับของแต่ละคนจากคะแนนไม่ได้</p>
       <div className="report-table-wrap"><table className="report-table"><thead><tr><th>อันดับจริง</th><th>เมมเบอร์</th><th>คาดไว้ตอนเที่ยง</th><th>คะแนนคาด</th></tr></thead><tbody>{comparison.rows.map(row=><tr key={row.name} className={row.name==='Nammonn'?'nammonn':''}><td className="report-actual">{row.actualRank}</td><th>{row.name}{row.name==='Nammonn'&&' ★'}</th><td className={row.rankDifference>0?'report-predicted report-up':row.rankDifference<0?'report-predicted report-down':'report-predicted report-same'}><span aria-hidden="true">{row.rankDifference>0?'↑':row.rankDifference<0?'↓':'→'}</span> #{row.predictedRank}</td><td className="report-score">{displayShort(row.predictedScore)}</td></tr>)}</tbody></table></div>
     </>}
   </main></div>;
