@@ -8,7 +8,7 @@ import { forgetAll, refreshEvent } from '@/lib/client-cache';
 export default function LiveSiteSync(){
   const pathname=usePathname(),router=useRouter();
   useEffect(()=>{
-    if(pathname==='/ge6-live'||pathname==='/ge6-current')return;
+    if(pathname==='/ge6-live'||pathname==='/ge6-current'||pathname==='/ge6-voters')return;
     let stopped=false,timer:ReturnType<typeof setTimeout>|undefined;
     let votes:number|undefined,revision:number|undefined,ge6HoldersAt:string|null|undefined,bnkHoldersAt:string|null|undefined;
     const schedule=()=>{if(!stopped)timer=setTimeout(sync,10000);};
