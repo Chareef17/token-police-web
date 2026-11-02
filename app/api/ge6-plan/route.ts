@@ -9,6 +9,9 @@ export async function GET() {
     const ranking = await ge6CurrentRanking('votes');
     return NextResponse.json({
       updatedAt: ranking.voteSyncedAt,
+      votedTotal: ranking.votedTotal,
+      trackedTotal: ranking.trackedTotal,
+      untrackedTotal: ranking.untrackedTotal,
       rows: ranking.rows.map((row:{name:string;amount:string}) => ({ name: row.name, amount: row.amount })),
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
