@@ -1,5 +1,13 @@
 # GE6 Plan — review and handoff
 
+## Latest user direction (supersedes frozen prototype)
+Remove the official preliminary ranking from the Plan UI. Use the live `/ge6-current` forecast as the read-only base. Let the team enter positive or negative score adjustments per member and attach a note to each adjustment. New vote transactions must update the live forecast base automatically; the Plan result is **current forecast + saved adjustments**, recalculated when the base changes. Never set an absolute member total for a manual adjustment, because that would hide subsequent new votes. Show current base, net manual adjustment, resulting score, and resulting rank. Store adjustments separately from source transactions and rankings. The current static prototype does **not** implement this yet and should not be presented as meeting this request.
+
+Recommended implementation: add a server-side Plan endpoint that reads `ge6CurrentRanking('votes')` from `lib/ge6-current.ts`, plus a separate table of scenario/member/delta/note/timestamp records. Reuse the existing live forecast refresh signal. On refresh, fetch a fresh ranking, then apply signed deltas and sort. Notes are plan metadata only. Preserve cents precision, validate member names and finite deltas, and ensure each adjustment is applied once. Test a new vote arriving after a manual +100: resulting score must rise by the vote amount while retaining +100. Test negative adjustments and notes, and confirm the live forecast remains unchanged.
+
+## Implemented live Plan page
+`/ge6-plan` now reads `/api/ge6-plan`, which uses `ge6CurrentRanking('votes')`. The browser polls every 30 seconds and applies signed adjustments after every refresh. It shows the resulting simulated rank and note list. Adjustments currently persist only in the local browser, so teammates on other devices do not share them. The endpoint does not write to the forecast database. TypeScript passes. Full build is blocked locally by Google Fonts network access, not by TypeScript errors. Next implementation should add shared scenario storage and auth if team collaboration is required, plus server-side tests of base refresh + delta preservation.
+
 ## User intent
 Build an easy planning simulator for Nammonn targeting rank 13. Use real observations as a read-only baseline. Scenario changes MUST NOT update transactions, recipient assignments, snapshots, or public forecasts. User wants a clickable prototype before production integration.
 
