@@ -30,7 +30,8 @@ export default function PlanClient(){
   const remove=async(id:string)=>{await write('DELETE',{id});};
   const ranking=useMemo(()=>rows.map(row=>{const base=Number(row.amount);const adjustment=items.filter(item=>item.member===row.name).reduce((sum,item)=>sum+item.delta,0);return{name:row.name,base,adjustment,total:Math.max(0,Math.round((base+adjustment)*100)/100)};}).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name)),[rows,items]);
   const nammonn=ranking.find(row=>row.name==='Nammonn');
-  const token=(raw:string)=>Number(raw)/1e18;
+  // The ranking API already returns token amounts as decimal strings.
+  const token=(raw:string)=>Number(raw);
   const totalVotes=token(totals.votedTotal);
   const plannedTotal=ranking.reduce((sum,row)=>sum+row.total,0);
   const remaining=totalVotes-plannedTotal;
