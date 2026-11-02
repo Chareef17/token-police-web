@@ -26,10 +26,19 @@ const tierConditions:Record<VoteTier,string>={
   tier6:'CAST(amount AS REAL)>=10000',
 };
 
-export async function ge6Live(page=1,tier:VoteTier|null=null,min:string|null=null,exact:string|null=null){
+export async function ge6Live(page=1,tier:VoteTier|null=null,min:string|null=null,exact:string|null=null,date:string|null=null,time:string|null=null){
   const db=await database();
-  const condition=exact!==null?'CAST(amount AS REAL)=?':min!==null?'CAST(amount AS REAL)>=?':tier?tierConditions[tier]:'CAST(amount AS REAL)>=0';
-  const args=exact!==null?[Number(exact)]:min!==null?[Number(min)]:[];
+  const amountCondition=exact!==null?'CAST(amount AS REAL)=?':min!==null?'CAST(amount AS REAL)>=?':tier?tierConditions[tier]:'CAST(amount AS REAL)>=0';
+  const args:(number|string)[]=exact!==null?[Number(exact)]:min!==null?[Number(min)]:[];
+  let condition=amountCondition;
+  if(date){
+    const [year,month,day]=date.split('-').map(Number);
+    const [hour,minute]=time?time.split(':').map(Number):[0,0];
+    const start=Date.UTC(year,month-1,day,hour-7,minute);
+    const end=start+(time?60000:86400000);
+    condition+=' AND voted_at>=? AND voted_at<?';
+    args.push(new Date(start).toISOString(),new Date(end).toISOString());
+  }
   const [countResult,statusResult,revisionResult]=await db.batch([
     {sql:`SELECT count(*) AS total FROM ge6_events WHERE ${condition}`,args},
     {sql:'SELECT value FROM metadata WHERE key=?',args:['ge6Status']},
