@@ -26,7 +26,7 @@ export default function RefreshButton(){
         if(!response.ok)throw new Error(result.error||'ซิงก์ข้อมูลไม่สำเร็จ');
         break;
       }
-      for(const [token,label] of [['ge6','GE6'],['bnk','BNK']] as const){
+      for(const [token,label] of [['ge6','GE6']] as const){
         const started=Date.now();
         for(;;){
           const response=await fetch(`/api/sync-holders?token=${token}`,{method:'POST',cache:'no-store'});

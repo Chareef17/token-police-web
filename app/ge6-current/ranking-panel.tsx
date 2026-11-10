@@ -3,11 +3,10 @@
 import { useEffect, useState, type ReactNode, type MouseEvent } from 'react';
 import Link from 'next/link';
 
-type Mode='votes'|'ge6'|'all';
+type Mode='votes'|'ge6';
 const views:{mode:Mode;href:string;label:string}[]=[
   {mode:'votes',href:'/ge6-current',label:'โหวตแล้ว'},
   {mode:'ge6',href:'/ge6-current?mode=ge6',label:'+ GE6 ในกระเป๋า'},
-  {mode:'all',href:'/ge6-current?mode=all',label:'+ GE6 + BNK'},
 ];
 
 export default function RankingPanel({mode,children}:{mode:Mode;children:ReactNode}){
