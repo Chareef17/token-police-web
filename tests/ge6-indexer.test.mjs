@@ -81,6 +81,21 @@ test('recovers votes skipped when block checkpoint ran ahead of explorer logs',a
     assert.equal(JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Checkpoint'")).value).height,height-400);
   }finally{db.close();}
 });
+test('records a missing on-chain vote index without blocking later votes, then fills it',async()=>{
+  const {db,state,transport}=await setup([vote(0,height-30),vote(2,height-20)]);
+  try{
+    const first=await poll(db,transport);
+    assert.equal(first.votes,2);
+    assert.deepEqual(first.missingVoteIndices,['1']);
+    const checkpoint=JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Checkpoint'")).value);
+    assert.equal(checkpoint.unresolvedFrom,height-30);
+    state.logs=[vote(0,height-30),vote(1,height-25),vote(2,height-20)];
+    const second=await poll(db,transport,{skipScheduledAudit:true});
+    assert.equal(second.votes,3);
+    assert.deepEqual(second.missingVoteIndices,[]);
+    assert.equal((await one(db,'SELECT count(*) n FROM ge6_events')).n,3);
+  }finally{db.close();}
+});
 test('incremental pass verifies new votes without loading old rows into the overlap',async()=>{
   const old=vote(0,height-500),overlap=vote(1,height-20);
   const {db,state,transport}=await setup([old,overlap]);
@@ -110,7 +125,7 @@ test('missing vote receipts and upstream failures do not replace the last good s
   const {db,state,transport}=await setup([vote(0)]);
   try{
     await poll(db,transport);
-    state.logs=[vote(2)];await assert.rejects(poll(db,transport,{now:Date.now()+3600000}),/Incomplete/);
+    state.logs=[vote(2)];await assert.rejects(poll(db,transport,{now:Date.now()+3600000}),/Explorer omitted saved GE6 vote/);
     assert.equal((await one(db,'SELECT count(*) n FROM ge6_events')).n,1);
     state.fail=true;await assert.rejects(poll(db,transport),/unavailable/);
     assert.equal((await one(db,"SELECT amount FROM votes WHERE event='GE6'")).amount,'1.000000000000000001');
