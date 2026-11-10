@@ -3,7 +3,7 @@ import { officialWallets } from './leaderboards';
 import { tokens } from './token-holders.mjs';
 
 // Read the latest completed holder scan from the database. The header's Sync
-// button updates both token snapshots before reloading the page.
+// button updates the GE6 snapshot before reloading the page.
 // GE6 balances of every holder except official wallets.
 export function ge6HeldBalances(){
   return (async()=>{

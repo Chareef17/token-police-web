@@ -29,7 +29,7 @@ export default function LiveForecastSync({mode,voteSyncedAt,chainVoteCount,assig
           if(stopped)return;
           setLastSync(result.lastSuccess);
           setFailed(false);
-          const changed=(typeof result.votes==='number'&&result.votes!==count.current)||(typeof result.assignmentRevision==='number'&&result.assignmentRevision!==revision.current)||(mode==='ge6'&&result.ge6HoldersAt!==holders.current);
+          const changed=(typeof result.votes==='number'&&result.votes!==count.current)||(typeof result.assignmentRevision==='number'&&result.assignmentRevision!==revision.current)||result.ge6HoldersAt!==holders.current;
           if(changed){if(typeof result.votes==='number')count.current=result.votes;if(typeof result.assignmentRevision==='number')revision.current=result.assignmentRevision;holders.current=result.ge6HoldersAt??null;router.refresh();}
         }else if(response.status!==409){setFailed(true);}
       }catch{if(!stopped)setFailed(true);}
@@ -41,8 +41,8 @@ export default function LiveForecastSync({mode,voteSyncedAt,chainVoteCount,assig
     return ()=>{stopped=true;if(timer)clearTimeout(timer);document.removeEventListener('visibilitychange',onVisibility);};
   },[router,mode]);
 
-  const heldAt=mode==='ge6'?ge6HoldersAt:null;
+  const heldAt=ge6HoldersAt;
   const voteStale=failed||!lastSync||Date.now()-Date.parse(lastSync)>20*60*1000;
-  const stale=voteStale||(mode!=='votes'&&(!heldAt||Date.now()-Date.parse(heldAt)>40*60*1000));
-  return <p className={stale?'forecast-freshness stale':'forecast-freshness'} aria-live="polite"><span className={voteStale?'forecast-live delayed':'forecast-live'} aria-label="ตรวจอัตโนมัติ">{voteStale?'รอซิงก์':'LIVE'}</span> โหวตล่าสุด {formatTime(lastSync)}{mode!=='votes'&&<> · เหรียญคงเหลือ {formatTime(heldAt)}</>}{stale?' · ข้อมูลอาจล่าช้า':''}</p>;
+  const stale=voteStale||!heldAt||Date.now()-Date.parse(heldAt)>40*60*1000;
+  return <p className={stale?'forecast-freshness stale':'forecast-freshness'} aria-live="polite"><span className={voteStale?'forecast-live delayed':'forecast-live'} aria-label="ตรวจอัตโนมัติ">{voteStale?'รอซิงก์':'LIVE'}</span> โหวตล่าสุด {formatTime(lastSync)} · เหรียญคงเหลือ {formatTime(heldAt)}{stale?' · ข้อมูลอาจล่าช้า':''}</p>;
 }

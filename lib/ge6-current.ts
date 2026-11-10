@@ -35,7 +35,7 @@ function assignedPreferences(rows:Record<string,unknown>[]){
 
 async function calculateRanking(mode:RankingMode='votes') {
   const includeHoldings=mode!=='votes';
-  const heldPromise=includeHoldings?ge6HeldBalances():Promise.resolve(new Map<string,bigint>());
+  const heldPromise=ge6HeldBalances();
   const db = await database();
   const freshnessRows = (await db.execute({sql:"SELECT key,value FROM metadata WHERE key IN ('ge6Status','ge6HoldersAt','bnkHoldersAt','ge6AssignmentRevision')"})).rows;
   const freshness = Object.fromEntries(freshnessRows.map(row=>[String(row.key),String(row.value)]));
@@ -64,9 +64,10 @@ async function calculateRanking(mode:RankingMode='votes') {
   const todayStartUtc=Math.floor((Date.now()+bangkokOffsetMs)/86400000)*86400000-bangkokOffsetMs;
   const {wallets,predictedWallets,todayWallets,assignedVotes,lastVoteAt}=partitionVoteEvents(votes,assignments,todayStartUtc);
   const heldBalances=await heldPromise;
+  const unvotedTotal=[...heldBalances.values()].reduce((total,value)=>total+value,0n);
   // BNK also counts for wallets with a saved prediction even if they never touched GE6.
   const predictedOnly=mode==='all'?(await db.execute('SELECT address FROM manual_predictions')).rows.map(row=>String(row.address).toLowerCase()):[];
-  const addresses = [...new Set([...wallets.keys(),...heldBalances.keys(),...predictedOnly])];
+  const addresses = [...new Set([...wallets.keys(),...(includeHoldings?heldBalances.keys():[]),...predictedOnly])];
   const bnkBalances=mode==='all'?await bnkHeldBalances(addresses):new Map<string,bigint>();
   const historical = new Map<string,Map<string,bigint>>();
   const manual = new Map<string,string[]>();
@@ -127,7 +128,7 @@ async function calculateRanking(mode:RankingMode='votes') {
     for (const [name,share] of splitVote(total,choices)) {additions.set(name,(additions.get(name)??0n)+share);record(name,address,share,'votes');}
     for (const [name,share] of splitVote(todayWallets.get(address)??0n,choices)) todayAdditions.set(name,(todayAdditions.get(name)??0n)+share);
   }
-  for(const [address,total] of heldBalances){
+  for(const [address,total] of includeHoldings?heldBalances:[]){
     const choices=choicesFor(address);
     if(!choices.length){heldUnassigned+=total;continue;}
     heldAllocated+=total;
@@ -151,7 +152,7 @@ async function calculateRanking(mode:RankingMode='votes') {
   if(trackedTotal+untrackedTotal!==votedTotal)throw new Error('GE6 vote totals do not reconcile');
   return {rows,mode,includeHoldings,contributions,additions,heldAdditions,
     cutoff:preliminary.cutoff,lastVoteAt,postVoteCount:votes.length,walletCount:wallets.size,manualWallets,
-    allocated:amount(allocated),unassigned:amount(unassigned),votedTotal:amount(votedTotal),trackedTotal:amount(trackedTotal),untrackedTotal:amount(untrackedTotal),heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),voteSyncedAt:ge6Status?.lastSuccess??null,chainVoteCount:Number(ge6Status?.votes??0),assignmentRevision:Number(freshness.ge6AssignmentRevision??0),ge6HoldersAt,bnkHoldersAt,syncError:ge6Status?.phase==='error',fetchedAt:new Date().toISOString()};
+    allocated:amount(allocated),unassigned:amount(unassigned),votedTotal:amount(votedTotal),trackedTotal:amount(trackedTotal),untrackedTotal:amount(untrackedTotal),totalSupply:ge6HoldersAt?amount(votedTotal+unvotedTotal):null,unvoted:ge6HoldersAt?amount(unvotedTotal):null,heldAllocated:amount(heldAllocated),heldUnassigned:amount(heldUnassigned),voteSyncedAt:ge6Status?.lastSuccess??null,chainVoteCount:Number(ge6Status?.votes??0),assignmentRevision:Number(freshness.ge6AssignmentRevision??0),ge6HoldersAt,bnkHoldersAt,syncError:ge6Status?.phase==='error',fetchedAt:new Date().toISOString()};
 }
 
 // Retry brief database drops once before giving up.
