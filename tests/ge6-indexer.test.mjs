@@ -68,6 +68,19 @@ test('incremental passes only add new votes and keep earlier ones',async()=>{
     assert.equal((await one(db,"SELECT count(*) n FROM votes WHERE event='GE6'")).n,3);
   }finally{db.close();}
 });
+test('recovers votes skipped when block checkpoint ran ahead of explorer logs',async()=>{
+  const first=vote(0,height-500);
+  const missing=vote(1,height-400);
+  const {db,state,transport}=await setup([first]);
+  try{
+    await poll(db,transport);
+    await db.execute({sql:"UPDATE metadata SET value=? WHERE key='ge6Checkpoint'",args:[JSON.stringify({height:height-2,hash:hash(10),auditedAt:Date.now()})]});
+    state.logs=[missing,first];
+    assert.equal((await poll(db,transport,{skipScheduledAudit:true})).votes,2);
+    assert.equal((await one(db,'SELECT count(*) n FROM ge6_events')).n,2);
+    assert.equal(JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Checkpoint'")).value).height,height-400);
+  }finally{db.close();}
+});
 test('incremental pass verifies new votes without loading old rows into the overlap',async()=>{
   const old=vote(0,height-500),overlap=vote(1,height-20);
   const {db,state,transport}=await setup([old,overlap]);
@@ -103,13 +116,13 @@ test('missing vote receipts and upstream failures do not replace the last good s
     assert.equal((await one(db,"SELECT amount FROM votes WHERE event='GE6'")).amount,'1.000000000000000001');
   }finally{db.close();}
 });
-test('reorg replaces GE6 facts atomically while preserving historical votes',async()=>{
+test('reorg stops without changing saved votes',async()=>{
   const {db,state,transport}=await setup([vote(0),vote(1)]);
   try{
     await poll(db,transport);state.blockHash=hash(11);state.logs=[{...vote(0),tx_hash:hash(100),block_hash:hash(11)}];
-    await poll(db,transport);
-    assert.equal((await one(db,'SELECT count(*) n FROM ge6_events')).n,1);
-    assert.equal((await one(db,"SELECT tx_hash FROM votes WHERE event='GE6'")).tx_hash,hash(100));
+    await assert.rejects(poll(db,transport),/manual review required/);
+    assert.equal((await one(db,'SELECT count(*) n FROM ge6_events')).n,2);
+    assert.equal((await one(db,"SELECT tx_hash FROM votes WHERE event='GE6' ORDER BY id LIMIT 1")).tx_hash,hash(1));
     assert.equal((await one(db,"SELECT count(*) n FROM votes WHERE event='GE5'")).n,1);
   }finally{db.close();}
 });
