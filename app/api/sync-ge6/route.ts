@@ -19,13 +19,10 @@ export async function POST(request:Request){
   if(!checkpoint)return Response.json({error:'ฐานข้อมูลยังไม่ได้สแกนครั้งแรก กรุณารอการซิงก์ตามรอบ'},{status:503});
   const stateRows=(await db.execute("SELECT key,value FROM metadata WHERE key IN ('ge6Status','ge6AssignmentRevision','ge6HoldersAt','bnkHoldersAt')")).rows;
   const state=Object.fromEntries(stateRows.map(row=>[String(row.key),String(row.value)]));
-  const currentStatus=JSON.parse(state.ge6Status??'null') as {lastSuccess?:string;votes?:number;phase?:string;lastError?:string}|null;
+  const currentStatus=JSON.parse(state.ge6Status??'null') as {lastSuccess?:string;votes?:number;phase?:string}|null;
   const assignmentRevision=Number(state.ge6AssignmentRevision??0);
   const holderTimes={ge6HoldersAt:state.ge6HoldersAt?JSON.parse(state.ge6HoldersAt):null,bnkHoldersAt:state.bnkHoldersAt?JSON.parse(state.bnkHoldersAt):null};
   const lastSuccess=currentStatus?.lastSuccess;
-  // A browser request cannot finish a deep catch-up within the web time limit.
-  // Leave the lease free for the longer background job until it succeeds.
-  if(currentStatus?.lastError?.includes('GE6 sync time limit reached'))return Response.json({error:'กำลังรอซิงก์ธุรกรรมย้อนหลังตามรอบ'},{status:503});
   if(!force&&currentStatus?.phase!=='error'&&lastSuccess&&Date.now()-Date.parse(lastSuccess)<8000)return Response.json({lastSuccess,votes:currentStatus?.votes,assignmentRevision,...holderTimes,recent:true},{headers:{'Cache-Control':'no-store'}});
   const owner=randomUUID();
   const now=Date.now();
@@ -41,7 +38,7 @@ export async function POST(request:Request){
     if(leaseLost||row?.owner!==owner||Number(row.expires)<Date.now())throw new Error('Indexer lease lost');
   };
   try{
-    const status=await poll(db,new TokenXTransport(),{skipScheduledAudit:true,assertLease,deadline:Date.now()+50000});
+    const status=await poll(db,new TokenXTransport(),{skipScheduledAudit:true,recoverHistoricalGaps:false,assertLease,deadline:Date.now()+50000});
     const latestRevision=(await db.execute({sql:'SELECT value FROM metadata WHERE key=?',args:['ge6AssignmentRevision']})).rows[0];
     const latestHolders=(await db.execute("SELECT key,value FROM metadata WHERE key IN ('ge6HoldersAt','bnkHoldersAt')")).rows;
     const holderState=Object.fromEntries(latestHolders.map(row=>[String(row.key),JSON.parse(String(row.value))]));
