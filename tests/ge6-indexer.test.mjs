@@ -90,10 +90,70 @@ test('records a missing on-chain vote index without blocking later votes, then f
     const checkpoint=JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Checkpoint'")).value);
     assert.equal(checkpoint.unresolvedFrom,height-30);
     state.logs=[vote(0,height-30),vote(1,height-25),vote(2,height-20)];
-    const second=await poll(db,transport,{skipScheduledAudit:true});
+    const second=await poll(db,transport,{skipScheduledAudit:true,recoverHistoricalGaps:false});
     assert.equal(second.votes,3);
     assert.deepEqual(second.missingVoteIndices,[]);
     assert.equal((await one(db,'SELECT count(*) n FROM ge6_events')).n,3);
+    assert.equal(JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Checkpoint'")).value).unresolvedFrom,null);
+  }finally{db.close();}
+});
+test('short sync saves recent votes without paging through an old gap, then background sync repairs it',async()=>{
+  const old=vote(0,height-900),missing=vote(1,height-850),afterGap=vote(2,height-800);
+  const boundary=vote(3,height-600),recent=vote(4,height-20),latest=vote(5,height-15);
+  const {db,transport}=await setup([recent,boundary,afterGap,old]);
+  try{
+    const initial=await poll(db,transport);
+    assert.deepEqual(initial.missingVoteIndices,['1']);
+    const get=transport.get;let historyAllowed=false,logRequests=0;
+    transport.get=async path=>{
+      if(!path.includes('/logs?'))return get(path);
+      logRequests++;
+      if(!new URL(path,'https://example.test').searchParams.has('block_number')){
+        return {items:[latest,recent,boundary],next_page_params:{block_number:boundary.block_number,index:boundary.index}};
+      }
+      assert.equal(historyAllowed,true,'short sync must stop before requesting historical pages');
+      return {items:[afterGap,missing,old],next_page_params:null};
+    };
+    const short=await poll(db,transport,{skipScheduledAudit:true,recoverHistoricalGaps:false});
+    assert.equal(logRequests,1);
+    assert.equal(short.votes,5);
+    assert.deepEqual(short.missingVoteIndices,['1']);
+    const checkpoint=JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Checkpoint'")).value);
+    assert.equal(checkpoint.height,latest.block_number);
+    assert.equal(checkpoint.unresolvedFrom,old.block_number);
+    assert.equal((await one(db,"SELECT count(*) n FROM votes WHERE event='GE6'")).n,5);
+    assert.equal((await one(db,"SELECT count(*) n FROM ge6_events WHERE vote_index='5'")).n,1);
+    assert.equal((await one(db,"SELECT count(*) n FROM ge6_events WHERE vote_index='1'")).n,0);
+
+    historyAllowed=true;logRequests=0;
+    const background=await poll(db,transport,{skipScheduledAudit:true});
+    assert.equal(logRequests,2);
+    assert.equal(background.votes,6);
+    assert.deepEqual(background.missingVoteIndices,[]);
+    assert.equal((await one(db,"SELECT count(*) n FROM votes WHERE event='GE6'")).n,6);
+    assert.equal((await one(db,"SELECT count(*) n FROM ge6_events WHERE vote_index='1'")).n,1);
+    assert.equal(JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Checkpoint'")).value).unresolvedFrom,null);
+  }finally{db.close();}
+});
+test('short sync merges a new gap with an old gap and clears only the gap it repairs',async()=>{
+  const old=vote(0,height-900),afterGap=vote(2,height-800),boundary=vote(3,height-600);
+  const recent=vote(4,height-20),missing=vote(5,height-15),latest=vote(6,height-10);
+  const {db,state,transport}=await setup([recent,boundary,afterGap,old]);
+  try{
+    await poll(db,transport);
+    state.logs=[latest,recent,boundary];
+    const withNewGap=await poll(db,transport,{skipScheduledAudit:true,recoverHistoricalGaps:false});
+    assert.equal(withNewGap.votes,5);
+    assert.deepEqual(withNewGap.missingVoteIndices,['1','5']);
+    assert.equal(JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Checkpoint'")).value).unresolvedFrom,old.block_number);
+
+    state.logs=[latest,missing,recent,boundary];
+    const repairedRecent=await poll(db,transport,{skipScheduledAudit:true,recoverHistoricalGaps:false});
+    assert.equal(repairedRecent.votes,6);
+    assert.deepEqual(repairedRecent.missingVoteIndices,['1']);
+    assert.equal(JSON.parse((await one(db,"SELECT value FROM metadata WHERE key='ge6Checkpoint'")).value).unresolvedFrom,old.block_number);
+    assert.equal((await one(db,"SELECT count(*) n FROM ge6_events WHERE vote_index='5'")).n,1);
+    assert.equal((await one(db,"SELECT count(*) n FROM ge6_events WHERE vote_index='1'")).n,0);
   }finally{db.close();}
 });
 test('incremental pass verifies new votes without loading old rows into the overlap',async()=>{
